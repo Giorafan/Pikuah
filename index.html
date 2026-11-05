@@ -309,9 +309,9 @@ const SupLib = (function () {
 
   function rpr(o) {
     o = o || {};
-    const sz = o.sz || 22;
+    const sz = o.sz || 24;
     return '<w:rPr><w:rFonts w:ascii="' + FONT + '" w:hAnsi="' + FONT + '" w:cs="' + FONT + '"/>' +
-      (o.b ? '<w:b/><w:bCs/>' : '') +
+      (o.b ? '<w:b/><w:bCs/>' : '') + (o.c ? '<w:color w:val="' + o.c + '"/>' : '') +
       '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/>' +
       (o.u ? '<w:u w:val="single"/>' : '') + '<w:rtl/></w:rPr>';
   }
@@ -326,14 +326,15 @@ const SupLib = (function () {
     if (o.style) ppr += '<w:pStyle w:val="' + o.style + '"/>';
     if (o.keepNext) ppr += '<w:keepNext/>';
     if (o.numId) ppr += '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + o.numId + '"/></w:numPr>';
+    if (o.pbdr) ppr += o.pbdr;
     ppr += '<w:bidi/>';
     ppr += '<w:spacing w:before="' + (o.before || 0) + '" w:after="' + (o.after || 0) + '" w:line="' + (o.line || 360) + '" w:lineRule="auto"/>';
     if (o.ind) ppr += o.ind;
     if (o.jc) ppr += '<w:jc w:val="' + o.jc + '"/>';
     return '<w:p><w:pPr>' + ppr + '</w:pPr>' + content + '</w:p>';
   }
-  function tcell(w, paras) {
-    return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/></w:tcPr>' + paras + '</w:tc>';
+  function tcell(w, paras, extra) {
+    return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/>' + (extra || '') + '</w:tcPr>' + paras + '</w:tc>';
   }
   function table(cols, rows) {
     return '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="' + cols.reduce((a, b) => a + b, 0) + '" w:type="dxa"/>' +
@@ -352,7 +353,7 @@ const SupLib = (function () {
     const media = [];
     const rels = { doc: [], hdr: [], ftr: [] };
     let drawId = 0;
-    const drawing = (img, maxW, maxH, part) => {
+    const drawing = (img, maxW, maxH, part, border) => {
       const n = media.length + 1, ext = img.ext || 'jpg', name = 'image' + n + '.' + ext, rid = 'rIdImg' + n;
       media.push({ name, data: img.bytes });
       rels[part || 'doc'].push({ rid, name });
@@ -362,50 +363,58 @@ const SupLib = (function () {
         '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic>' +
         '<pic:nvPicPr><pic:cNvPr id="' + id + '" name="' + name + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
         '<pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + s.cx + '" cy="' + s.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + s.cx + '" cy="' + s.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' + (border ? '<a:ln w="9525"><a:solidFill><a:srgbClr val="D5DBC6"/></a:solidFill></a:ln>' : '') + '</pic:spPr>' +
         '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
     };
     const P = (t, po, ro) => para(runs(t, ro), po);
     const blank = () => para('', {});
     const body = [];
 
+    const GREEN = '788850', TINT = 'EEF1E6', LINEC = 'D5DBC6', MUTED = '66756B';
+    const noB = '<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders>';
+    const bd = c => '<w:tcBorders>' + ['top', 'left', 'bottom', 'right'].map(k => '<w:' + k + ' w:val="single" w:sz="6" w:space="0" w:color="' + c + '"/>').join('') + '</w:tcBorders>';
+    const section = t => P(t, { keepNext: true, before: 200, after: 120, pbdr: '<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="2" w:color="' + LINEC + '"/></w:pBdr>' }, { b: true, sz: 30, c: GREEN });
+
     body.push(P(m.letterDate, { jc: 'right' }));
-    body.push(P(m.location, { jc: 'right' }));
+    if (m.projNo) body.push(P(m.projNo, { jc: 'right' }, { b: true, c: GREEN }));
     body.push(blank());
-    body.push(P('הנדון: דו"ח פיקוח עליון' + (m.subject ? ' – ' + m.subject : ''), { jc: 'center' }, { b: true, u: true }));
+    /* subject block: tinted, with a green bar on the right */
+    body.push(table([9638], [trow([tcell(9638,
+      P('דו"ח פיקוח עליון', { before: 120 }, { b: true, c: GREEN }) + P(m.subject || 'ללא נושא', { after: 120 }, { b: true, sz: 36 }),
+      '<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="single" w:sz="36" w:space="0" w:color="' + GREEN + '"/></w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="' + TINT + '"/>')])]));
     body.push(blank());
-    body.push(P('בתאריך ' + m.visitDate + ' בוצע פיקוח עליון באתר.'));
-    body.push(blank());
+    /* three info cards */
+    const card = (label, val) => tcell(3100, P(label, { before: 60 }, { b: true, c: MUTED }) + P(val || '—', { after: 60 }, { b: true }), bd(LINEC));
+    const gap = () => tcell(169, para('', {}), noB);
+    body.push(table([3100, 169, 3100, 169, 3100], [trow([card('תאריך ביקור', m.visitDate), gap(), card('מיקום', m.location), gap(), card('רושם', m.signName)])]));
     if (m.participants && m.participants.length) {
-      body.push(P('משתתפים:', { keepNext: true }));
+      body.push(section('משתתפים'));
       m.participants.forEach(l => body.push(P(l)));
-      body.push(blank());
     }
+    if ((m.items || []).length) body.push(section('הערות והוראות'));
 
     const indent = '<w:ind w:left="720"/>';
     (m.items || []).forEach(it => {
       const ph = it.photos || [];
       body.push(para(runs(it.text || '', {}), { style: 'ListParagraph', numId: 1, keepNext: ph.length > 0, after: ph.length ? 60 : 0 }));
       if (ph.length === 1) {
-        body.push(para(drawing(ph[0], 15.4 * CM, 13 * CM), { ind: indent, line: 240, after: 160 }));
+        body.push(para(drawing(ph[0], 15.4 * CM, 13 * CM, undefined, true), { ind: indent, line: 240, after: 160 }));
       } else {
         for (let i = 0; i < ph.length; i += 2) {
           const row = [ph[i], ph[i + 1]].filter(Boolean);
           const sp = '<w:r>' + rpr({}) + '<w:t xml:space="preserve">   </w:t></w:r>';
-          body.push(para(row.map(p => drawing(p, 7.5 * CM, 9 * CM)).join(sp), { ind: indent, line: 240, after: 160 }));
+          body.push(para(row.map(p => drawing(p, 7.5 * CM, 9 * CM, undefined, true)).join(sp), { ind: indent, line: 240, after: 160 }));
         }
       }
     });
     body.push(blank());
 
     /* closing: cc list (right) and signature (left) */
-    const cc = [P('העתק:', {})];
+    const cc = [P('העתק:', {}, { b: true, c: GREEN })];
     (m.cc || []).forEach(l => cc.push(P(l, {})));
-    const sig = [P('בברכה,', { jc: 'right' }, { b: true, sz: 24 })];
+    const sig = [P('רשם: ' + (m.signName || ''), { jc: 'right' }, { b: true, sz: 24 })];
+    if (m.signTitle) sig.push(P(m.signTitle, { jc: 'right' }, { sz: 24 }));
     if (m.signature) sig.push(para(drawing(m.signature, 3.3 * CM, 2.2 * CM), { jc: 'right', line: 240 }));
-    else sig.push(blank());
-    if (m.signTitle) sig.push(P(m.signTitle, { jc: 'right' }, { b: true, sz: 24 }));
-    if (m.signName) sig.push(P(m.signName, { jc: 'right' }, { b: true }));
     body.push(table([4819, 4819], [trow([tcell(4819, cc.join('')), tcell(4819, sig.join(''))])]));
     body.push(blank());
 
@@ -426,7 +435,7 @@ const SupLib = (function () {
     const footerXml = XML + '<w:ftr ' + NS + '>' + ftr + '</w:ftr>';
 
     const stylesXml = XML + '<w:styles xmlns:w="' + W + '">' +
-      '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/>' +
+      '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/>' +
       '<w:lang w:val="he-IL" w:eastAsia="he-IL" w:bidi="he-IL"/></w:rPr></w:rPrDefault>' +
       '<w:pPrDefault><w:pPr><w:bidi/></w:pPr></w:pPrDefault></w:docDefaults>' +
       '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
@@ -434,7 +443,7 @@ const SupLib = (function () {
       '<w:pPr><w:ind w:left="720"/></w:pPr></w:style></w:styles>';
     const numberingXml = XML + '<w:numbering xmlns:w="' + W + '"><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>' +
       '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/>' +
-      '<w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>';
+      '<w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr><w:rPr><w:b/><w:bCs/><w:color w:val="788850"/></w:rPr></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>';
 
     const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
     const relsXml = list => XML + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + list + '</Relationships>';
@@ -607,19 +616,25 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function summarize(r) {
     let photos = 0;
     r.findings.forEach(f => { photos += f.photos.length; });
-    return { id: r.id, project: r.project, date: r.date, location: r.location, updatedAt: r.updatedAt || 0, total: r.findings.length, photos };
+    return { id: r.id, projNo: r.projNo || '', project: r.project, date: r.date, location: r.location, updatedAt: r.updatedAt || 0, total: r.findings.length, photos };
   }
 
   /* ---------- factories ---------- */
   const HE_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   const letterDate = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + ' ' + HE_MONTHS[+p[1] - 1] + ' ' + p[0] : ''; };
   const dotDate = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : ''; };
+  const yy2 = () => String(new Date().getFullYear()).slice(-2);
+  function nextProjNo() {
+    const y = yy2(); let max = 0;
+    S.summaries.forEach(x => { const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(x.projNo || ''); if (m && m[2] === y) max = Math.max(max, +m[1]); });
+    return (max + 1) + '/' + y;
+  }
   function newAttendee(a) { return Object.assign({ id: uid(), name: '', role: '', org: '' }, a || {}); }
   function newReport(from) {
     const s = S.settings;
-    const r = { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), project: '', location: '', attendees: [], ccAll: true, ccExtra: '', findings: [] };
+    const r = { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), projNo: nextProjNo(), project: '', location: '', attendees: [], ccAll: true, ccExtra: '', findings: [] };
     if (from) {
-      r.project = from.project || ''; r.location = from.location || ''; r.ccAll = from.ccAll !== false; r.ccExtra = from.ccExtra || '';
+      r.project = from.project || ''; r.projNo = from.projNo || r.projNo; r.location = from.location || ''; r.ccAll = from.ccAll !== false; r.ccExtra = from.ccExtra || '';
       r.attendees = from.attendees.map(a => newAttendee({ name: a.name, role: a.role, org: a.org }));
     } else if (s.supervisorName || s.officeName) {
       r.attendees = [newAttendee({ name: s.supervisorName || '', role: s.supervisorRole || 'אדריכל נוף', org: s.officeName || '' })];
@@ -628,7 +643,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function normalizeReport(r) {
     if (!r) return r;
-    r.letterDate = r.letterDate || r.date || todayISO();
+    r.letterDate = r.letterDate || r.date || todayISO(); r.projNo = r.projNo || '';
     r.ccAll = r.ccAll !== false; r.ccExtra = r.ccExtra || '';
     r.findings.forEach(f => { if (f.text == null) f.text = [f.note, f.instruction].filter(Boolean).join(' '); });
     return r;
@@ -770,6 +785,14 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       '<button class="danger" data-act="del" data-id="' + it.id + '" data-arm="בטוח? לחץ שוב">מחק</button></div></div>';
   }
 
+  function sigCard() {
+    const v = S.settings.signature;
+    return '<div class="card"><h2>חתימה</h2>' +
+      (v ? '<img class="img-prev" src="' + v.src + '" alt="החתימה שלך">' : '<p style="margin:0 0 12px;color:var(--muted)">צייר את החתימה על המסך, או העלה תמונה. בתמונת PNG עם רקע שקוף הרקע נשמר שקוף.</p>') +
+      '<div class="row" style="margin-top:12px"><button class="btn small primary" data-act="sg-open">' + icon('pen') + ' ' + (v ? 'צייר מחדש' : 'צייר חתימה') + '</button>' +
+      '<button class="btn small" data-act="img-pick" data-kind="signature">' + (v ? 'החלף בתמונה' : 'העלה תמונה') + '</button>' +
+      (v ? '<button class="btn small danger" data-act="img-del" data-kind="signature">הסר</button>' : '') + '</div></div>';
+  }
   function imgCard(kind, title, note) {
     const v = kind === 'signature' ? S.settings.signature : letterImg(kind);
     const custom = kind !== 'signature' && S.settings[kind + 'Img'] !== undefined;
@@ -780,16 +803,20 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       (custom ? '<button class="btn small" data-act="img-reset" data-kind="' + kind + '">ברירת מחדל</button>' : '') + '</div></div>';
   }
   function viewSettings() {
-    const s = S.settings;
-    return '<header class="top"><button class="icon-btn" data-act="back-list" aria-label="חזרה">' + icon('back') + '</button><h1>הגדרות</h1></header>' +
-      '<div class="stack"><div class="card"><h2>פרטי המפקח</h2>' +
-      fld('שם המפקח', 's:supervisorName', s.supervisorName, 'placeholder="שם מלא"') +
+    const s = S.settings, first = S.first;
+    return (first ? '<header class="top"><h1>ברוכים הבאים<span class="sub">הגדרה חד־פעמית</span></h1></header>' :
+      '<header class="top"><button class="icon-btn" data-act="back-list" aria-label="חזרה">' + icon('back') + '</button><h1>הגדרות</h1></header>') +
+      '<div class="stack">' +
+      (first ? '<p style="margin:0;color:var(--muted)">הפרטים האלה נשמרים במכשיר הזה. השם שלך יופיע אוטומטית ברשימת המשתתפים ובסוף כל דו״ח, עם החתימה. אפשר לשנות אותם תמיד בהגדרות.</p>' : '') +
+      '<div class="card"><h2>הפרטים שלי</h2>' +
+      fld('שם מלא (הרושם)', 's:supervisorName', s.supervisorName, 'placeholder="שם מלא" autocomplete="name"') +
       fld('תפקיד (ברשימת המשתתפים)', 's:supervisorRole', s.supervisorRole) +
       fld('שם המשרד (ברשימת המשתתפים)', 's:officeName', s.officeName) +
-      fld('כותרת החתימה', 's:signTitle', s.signTitle, 'placeholder="למשל: אדר\' נוף"') + '</div>' +
-      imgCard('signature', 'חתימה', 'מומלץ קובץ PNG עם רקע שקוף. תופיע מעל השם בסוף הדו״ח.') +
-      imgCard('header', 'כותרת עליונה בנייר המכתבים', 'התמונה שבראש כל עמוד.') +
-      imgCard('footer', 'כותרת תחתונה בנייר המכתבים', 'התמונה שבתחתית כל עמוד.') + '</div>';
+      fld('כותרת מתחת לשם (לא חובה)', 's:signTitle', s.signTitle, 'placeholder="למשל: אדר\' נוף"') + '</div>' +
+      sigCard() +
+      (first ? '<button class="btn primary big" data-act="first-done">שמור והתחל</button>' :
+        imgCard('header', 'כותרת עליונה בנייר המכתבים', 'התמונה שבראש כל עמוד.') +
+        imgCard('footer', 'כותרת תחתונה בנייר המכתבים', 'התמונה שבתחתית כל עמוד.')) + '</div>';
   }
   function fld(label, bind, val, extra) {
     return '<div class="fld"><label>' + esc(label) + '</label><input type="text" data-bind="' + bind + '" value="' + esc(val) + '" ' + (extra || '') + '></div>';
@@ -822,6 +849,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const r = S.report;
     return '<div class="stack">' +
       '<div class="card"><h2>פרטי הדו״ח</h2>' +
+      fld('מספר פרויקט (מספר/שנה)', 'r:projNo', r.projNo, 'placeholder="34/26" dir="ltr" inputmode="text" style="text-align:right"') +
       fld('נושא', 'r:project', r.project, 'placeholder="למשל: פיתוח מסירה – אור יהודה"') +
       fld('מיקום', 'r:location', r.location, 'placeholder="למשל: אור יהודה – רח׳ אריאל שרון 09/20"') +
       '<div class="grid2" style="margin-top:12px"><div class="fld"><label>תאריך הביקור</label><input type="date" data-bind="r:date" value="' + esc(r.date) + '"></div>' +
@@ -889,8 +917,9 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
 
   /* ---------- letter layout engine (canvas pages shared by preview and PDF) ---------- */
-  const PW = 794, PH = 1123, MX = 76, CW = PW - 2 * MX, LH = 22;
-  const FB = 'Heebo, "Arial Hebrew", Arial, sans-serif';
+  const PW = 794, PH = 1123, MX = 76, CW = PW - 2 * MX, LH = 24;
+  const FB = 'Arial, "Arial Hebrew", "Liberation Sans", sans-serif';
+  const GREEN = '#788850', TINT = '#EEF1E6', LINEC = '#D5DBC6', MUTED = '#66756B';
   const INK = '#111111';
 
   async function ensureFonts() {
@@ -942,11 +971,11 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     /* one paragraph of text; align is the visual side: right (default), left or center */
     function flow(str, o) {
       o = o || {};
-      const size = o.size || 14.5, f = F(o.weight || 400, size), x0 = o.x0 == null ? MX : o.x0, w = o.w == null ? CW : o.w, align = o.align || 'right';
+      const size = o.size || 16, f = F(o.weight || 400, size), x0 = o.x0 == null ? MX : o.x0, w = o.w == null ? CW : o.w, align = o.align || 'right';
       wrap(str, f, w).forEach(ln => {
         if (y + LH > BOTTOM) newPage();
         const x = align === 'center' ? x0 + w / 2 : align === 'left' ? x0 : x0 + w;
-        T(ln, x, y + LH / 2, f, INK, align);
+        T(ln, x, y + LH / 2, f, o.c || INK, align);
         if (o.under && ln) {
           const tw = mw(ln, f), ux = align === 'center' ? x - tw / 2 : align === 'left' ? x : x - tw;
           ops.push({ k: 'l', x1: ux, x2: ux + tw, y: y + LH / 2 + 9, c: INK, lw: 1 });
@@ -956,62 +985,100 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     }
     const blank = () => { y += LH; };
 
+    const right = MX + CW, S12 = 16, S15 = 20, S18 = 24;
+    /* date and project number on the left */
     flow(letterDate(r.letterDate), { align: 'left' });
-    flow(r.location, { align: 'left' });
-    blank();
-    flow('הנדון: דו"ח פיקוח עליון' + (r.project ? ' – ' + r.project : ''), { align: 'center', weight: 700, under: true });
-    blank();
-    flow('בתאריך ' + dotDate(r.date) + ' בוצע פיקוח עליון באתר.');
-    blank();
+    if (r.projNo) {
+      const pf = F(700, S12), pw = mw(r.projNo, pf) + 28, ph = 26;
+      if (y + ph > BOTTOM) newPage();
+      ops.push({ k: 'r', x: MX, y: y + 1, w: pw, h: ph, r: 13, fill: GREEN });
+      T(r.projNo, MX + pw / 2, y + 1 + ph / 2, pf, '#FFFFFF', 'center'); y += ph + 6;
+    }
+    y += 8;
+    /* subject block */
+    const sf = F(700, S18), lf = F(700, S12), subj = wrap(r.project || 'ללא נושא', sf, CW - 44);
+    const bh = 14 + 22 + subj.length * 30 + 10;
+    if (y + bh > BOTTOM) newPage();
+    ops.push({ k: 'r', x: MX, y, w: CW, h: bh, r: 0, fill: TINT });
+    ops.push({ k: 'r', x: right - 6, y, w: 6, h: bh, r: 0, fill: GREEN });
+    T('דו"ח פיקוח עליון', right - 22, y + 14 + 11, lf, GREEN, 'right');
+    subj.forEach((l, i) => T(l, right - 22, y + 14 + 22 + 15 + i * 30, sf, INK, 'right'));
+    y += bh + 14;
+    /* three info cards */
+    const cards = [['תאריך ביקור', dotDate(r.date)], ['מיקום', r.location || '—'], ['רושם', s.supervisorName || '—']];
+    const cwid = (CW - 20) / 3, vf = F(700, S12), cl = cards.map(c => wrap(c[1], vf, cwid - 24));
+    const ch = 10 + 22 + Math.max.apply(null, cl.map(a => a.length)) * 22 + 8;
+    if (y + ch > BOTTOM) newPage();
+    cards.forEach((c, i) => {
+      const xr = right - i * (cwid + 10);
+      ops.push({ k: 'r', x: xr - cwid, y, w: cwid, h: ch, r: 8, stroke: LINEC });
+      T(c[0], xr - 12, y + 10 + 9, F(700, S12), MUTED, 'right');
+      cl[i].forEach((l, j) => T(l, xr - 12, y + 10 + 22 + 11 + j * 22, vf, INK, 'right'));
+    });
+    y += ch + 8;
+    const section = txt => {
+      if (y + 56 > BOTTOM) newPage();
+      y += 12; const f = F(700, S15), tw = mw(txt, f);
+      T(txt, right, y + 14, f, GREEN, 'right');
+      ops.push({ k: 'l', x1: MX, x2: right - tw - 12, y: y + 14, c: LINEC, lw: 1.2 });
+      y += 34;
+    };
     const parts = participantLines(r.attendees);
-    if (parts.length) { flow('משתתפים:'); parts.forEach(l => flow(l)); blank(); }
+    if (parts.length) { section('משתתפים'); parts.forEach(l => flow(l)); }
+    if (r.findings.length) section('הערות והוראות');
 
-    const IND = 48, TW = CW - IND, right = MX + CW;
+    const IND = 42, TW = CW - IND;
     r.findings.forEach((f, idx) => {
-      const tf = F(400, 14.5), lines = wrap(f.text || '', tf, TW), textH = Math.max(1, lines.length) * LH;
+      const tf = F(400, S12), lines = wrap(f.text || '', tf, TW), textH = Math.max(1, lines.length) * LH;
       const P = f.photos.filter(p => imgs.has(p.id));
       const rows = P.length === 1 ? [[P[0]]] : P.reduce((a, p, i) => { if (i % 2 === 0) a.push([p]); else a[a.length - 1].push(p); return a; }, []);
       const size = (p, many) => { const im = imgs.get(p.id); return many ? fit(im.naturalWidth, im.naturalHeight, (TW - 12) / 2, 330) : fit(im.naturalWidth, im.naturalHeight, TW, 500); };
       const rowH = row => Math.max.apply(null, row.map(p => size(p, P.length > 1).h));
       const need = textH + 6 + (rows.length ? rowH(rows[0]) : 0);
       if (y + need > BOTTOM && need <= BOTTOM - TOP) newPage();
-      T((idx + 1) + '.', right - 14, y + LH / 2, tf, INK, 'right');
+      ops.push({ k: 'r', x: right - 26, y: y - 1, w: 26, h: 26, r: 13, fill: GREEN });
+      T(String(idx + 1), right - 13, y + 12, F(700, S12), '#FFFFFF', 'center');
       if (lines.length) lines.forEach(ln => { if (y + LH > BOTTOM) newPage(); T(ln, right - IND, y + LH / 2, tf, INK, 'right'); y += LH; }); else y += LH;
-      y += 6;
+      y += 8;
       rows.forEach(row => {
         const h = rowH(row);
         if (y + h > BOTTOM) newPage();
         let xr = right - IND;
         row.forEach(p => {
           const sz = size(p, P.length > 1), im = imgs.get(p.id);
-          ops.push({ k: 'i', img: im, x: xr - sz.w, y, w: sz.w, h: sz.h });
+          ops.push({ k: 'i', img: im, x: xr - sz.w, y, w: sz.w, h: sz.h, rad: 8 });
           xr -= sz.w + 12;
         });
-        y += h + 14;
+        y += h + 16;
       });
     });
 
-    /* closing: cc list on the right, signature on the left */
+    /* closing: cc list on the right, "רשם" with signature on the left */
     y += LH;
     const sigH = sigImg ? fit(sigImg.naturalWidth, sigImg.naturalHeight, 125, 83).h : 40;
     const cc = ccLines(r);
-    const closeH = Math.max((1 + cc.length) * LH, LH + sigH + LH * 2 + 8);
+    const closeH = Math.max((1 + cc.length) * LH, LH * (s.signTitle ? 2 : 1) + sigH + 12);
     if (y + closeH > BOTTOM) newPage();
     const y0 = y;
-    T('העתק:', right, y0 + LH / 2, F(400, 14.5), INK, 'right');
-    cc.forEach((l, i) => T(l, right, y0 + LH * (i + 1) + LH / 2, F(400, 14.5), INK, 'right'));
+    T('העתק:', right, y0 + LH / 2, F(700, S12), GREEN, 'right');
+    cc.forEach((l, i) => T(l, right, y0 + LH * (i + 1) + LH / 2, F(400, S12), INK, 'right'));
     const sx = MX + 30;
-    T('בברכה,', sx, y0 + LH / 2, F(700, 16), INK, 'left');
+    T('רשם: ' + (s.supervisorName || ''), sx, y0 + LH / 2, F(700, S12), INK, 'left');
     let sy = y0 + LH + 4;
-    if (sigImg) { const sz = fit(sigImg.naturalWidth, sigImg.naturalHeight, 125, 83); ops.push({ k: 'i', img: sigImg, x: sx, y: sy, w: sz.w, h: sz.h }); sy += sz.h + 4; } else sy += 36;
-    if (s.signTitle) { T(s.signTitle, sx, sy + LH / 2, F(700, 16), INK, 'left'); sy += LH; }
-    if (s.supervisorName) T(s.supervisorName, sx, sy + LH / 2, F(700, 14.5), INK, 'left');
+    if (s.signTitle) { T(s.signTitle, sx, sy + LH / 2 - 4, F(400, S12), INK, 'left'); sy += LH; }
+    if (sigImg) { const sz = fit(sigImg.naturalWidth, sigImg.naturalHeight, 125, 83); ops.push({ k: 'i', img: sigImg, x: sx, y: sy, w: sz.w, h: sz.h }); }
 
     return { pages, imgs, hdrImg, ftrImg, hdrW, hdrH, ftrW, ftrH };
   }
 
   function rr(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function rrPath(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    if (!r) { ctx.rect(x, y, w, h); return; }
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
     ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
   function renderPage(lay, i, scale) {
@@ -1026,7 +1093,17 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     lay.pages[i].forEach(op => {
       if (op.k === 't') { ctx.font = op.f; ctx.fillStyle = op.c; ctx.textAlign = op.a; ctx.fillText(op.s, op.x, op.y); }
       else if (op.k === 'l') { ctx.beginPath(); ctx.moveTo(op.x1, op.y); ctx.lineTo(op.x2, op.y); ctx.strokeStyle = op.c; ctx.lineWidth = op.lw || 1; ctx.stroke(); }
-      else if (op.k === 'i') ctx.drawImage(op.img, op.x, op.y, op.w, op.h);
+      else if (op.k === 'r') {
+        ctx.beginPath(); rrPath(ctx, op.x, op.y, op.w, op.h, op.r || 0);
+        if (op.fill) { ctx.fillStyle = op.fill; ctx.fill(); }
+        if (op.stroke) { ctx.strokeStyle = op.stroke; ctx.lineWidth = 1.2; ctx.stroke(); }
+      } else if (op.k === 'i') {
+        if (op.rad) {
+          ctx.save(); ctx.beginPath(); rrPath(ctx, op.x, op.y, op.w, op.h, op.rad); ctx.clip();
+          ctx.drawImage(op.img, op.x, op.y, op.w, op.h); ctx.restore();
+          ctx.beginPath(); rrPath(ctx, op.x, op.y, op.w, op.h, op.rad); ctx.strokeStyle = LINEC; ctx.lineWidth = 1; ctx.stroke();
+        } else ctx.drawImage(op.img, op.x, op.y, op.w, op.h);
+      }
     });
     return cv;
   }
@@ -1078,7 +1155,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function docModel() {
     const r = S.report, s = S.settings;
     return {
-      letterDate: letterDate(r.letterDate), location: r.location, subject: r.project, visitDate: dotDate(r.date),
+      letterDate: letterDate(r.letterDate), projNo: r.projNo, location: r.location, subject: r.project, visitDate: dotDate(r.date),
       participants: participantLines(r.attendees),
       items: r.findings.map(f => ({
         text: f.text,
@@ -1391,6 +1468,54 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     } catch (e) { busy(null); toast('לא הצלחתי לקרוא את התמונה'); }
   }
 
+  /* ---------- signature pad ---------- */
+  const SG = { cv: null, strokes: [], cur: null, color: '#111111' };
+  function sgDraw() {
+    const c = SG.cv, x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height);
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    SG.strokes.forEach(st => {
+      x.strokeStyle = st.c; x.lineWidth = 6; x.fillStyle = st.c; x.beginPath();
+      if (st.p.length === 1) { x.arc(st.p[0][0], st.p[0][1], 3, 0, 7); x.fill(); return; }
+      x.moveTo(st.p[0][0], st.p[0][1]);
+      for (let i = 1; i < st.p.length - 1; i++) { const m = [(st.p[i][0] + st.p[i + 1][0]) / 2, (st.p[i][1] + st.p[i + 1][1]) / 2]; x.quadraticCurveTo(st.p[i][0], st.p[i][1], m[0], m[1]); }
+      const l = st.p[st.p.length - 1]; x.lineTo(l[0], l[1]); x.stroke();
+    });
+    const un = $('#sg-undo'); if (un) un.disabled = !SG.strokes.length;
+  }
+  function sgOpen() {
+    const el = document.createElement('div'); el.className = 'sk'; el.id = 'sg'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'ציור חתימה');
+    el.innerHTML =
+      '<div class="sk-top"><button class="btn" data-act="sg-cancel">ביטול</button><span>חתום באצבע</span><button class="btn primary" data-act="sg-save">שמור</button></div>' +
+      '<div class="sk-stage"><canvas id="sg-cv" width="1400" height="600" aria-label="אזור חתימה" style="background:#fff;width:min(94vw,640px);aspect-ratio:7/3;border-radius:8px"></canvas></div>' +
+      '<div class="sk-tools"><div class="sk-row">' +
+      '<button class="sk-color" data-act="sg-color" data-color="#111111" style="background:#111111" aria-label="שחור" aria-pressed="true"></button>' +
+      '<button class="sk-color" data-act="sg-color" data-color="#1E3FA8" style="background:#1E3FA8" aria-label="כחול" aria-pressed="false"></button>' +
+      '<span class="sk-sep"></span>' +
+      '<button class="sk-tool" id="sg-undo" data-act="sg-undo" aria-label="בטל קו אחרון" disabled>' + icon('undo', 24) + '</button>' +
+      '<button class="sk-tool" data-act="sg-clear" aria-label="נקה" style="width:auto;padding:0 10px;font-size:13px;font-weight:700">נקה</button></div></div>';
+    document.body.appendChild(el);
+    SG.cv = $('#sg-cv'); SG.strokes = []; SG.cur = null; SG.color = '#111111'; sgDraw();
+    const pt = e => { const r = SG.cv.getBoundingClientRect(); return [(e.clientX - r.left) * SG.cv.width / r.width, (e.clientY - r.top) * SG.cv.height / r.height]; };
+    SG.cv.style.touchAction = 'none';
+    SG.cv.addEventListener('pointerdown', e => { e.preventDefault(); try { SG.cv.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } SG.cur = { c: SG.color, p: [pt(e)] }; SG.strokes.push(SG.cur); sgDraw(); });
+    SG.cv.addEventListener('pointermove', e => { if (!SG.cur) return; e.preventDefault(); SG.cur.p.push(pt(e)); sgDraw(); });
+    const end = () => { SG.cur = null; };
+    SG.cv.addEventListener('pointerup', end); SG.cv.addEventListener('pointercancel', end);
+  }
+  function sgClose() { const el = $('#sg'); if (el) el.remove(); SG.cv = null; SG.strokes = []; SG.cur = null; }
+  async function sgSave() {
+    if (!SG.strokes.length) { toast('צייר חתימה קודם'); return; }
+    const c = SG.cv; let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+    SG.strokes.forEach(st => st.p.forEach(p => { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }));
+    const pad = 12; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(c.width, x1 + pad); y1 = Math.min(c.height, y1 + pad);
+    const w = Math.max(1, Math.round(x1 - x0)), h = Math.max(1, Math.round(y1 - y0)), k = Math.min(1, 700 / w);
+    const o = document.createElement('canvas'); o.width = Math.max(1, Math.round(w * k)); o.height = Math.max(1, Math.round(h * k));
+    o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, o.width, o.height);
+    S.settings.signature = { src: o.toDataURL('image/png'), w: o.width, h: o.height };
+    await DB.setMeta('settings', S.settings);
+    sgClose(); render(); toast('החתימה נשמרה');
+  }
+
   /* ---------- events ---------- */
   function armed(btn, fn) {
     if (btn.dataset.armed) { clearTimeout(+btn.dataset.armed); delete btn.dataset.armed; fn(); return; }
@@ -1425,6 +1550,17 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
 
   const ACT = {
     'settings': () => go('settings'),
+    'sg-open': () => sgOpen(),
+    'sg-cancel': () => sgClose(),
+    'sg-save': () => sgSave(),
+    'sg-undo': () => { SG.strokes.pop(); sgDraw(); },
+    'sg-clear': () => { SG.strokes = []; sgDraw(); },
+    'sg-color': (b) => { SG.color = b.dataset.color; $$('#sg [data-act=sg-color]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); },
+    'first-done': async () => {
+      if (!String(S.settings.supervisorName || '').trim()) { toast('נא להזין שם מלא'); return; }
+      S.settings.supervisorName = S.settings.supervisorName.trim(); S.first = false;
+      await DB.setMeta('settings', S.settings); go('list');
+    },
     'back-list': async () => { await flush(); S.report = null; S.summaries = await DB.summaries(); go('list'); },
     'new': async () => { S.report = newReport(); S.tab = 'details'; dirty = true; await flush(); go('report', 'details'); },
     'open': async (b) => { busy('פותח דו״ח…'); const r = await DB.get(b.dataset.id); busy(null); if (!r) { toast('לא הצלחתי לפתוח את הדו״ח'); return; } S.report = normalizeReport(r); go('report', 'details'); setSaved('נשמר'); },
@@ -1475,8 +1611,10 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     skBind();
     await DB.init();
     const st = await DB.getMeta('settings');
-    S.settings = Object.assign({ officeName: '', supervisorName: '', supervisorRole: 'אדריכל נוף', signTitle: '' }, st || {});
+    S.settings = Object.assign({ officeName: 'קו בנוף', supervisorName: '', supervisorRole: 'אדריכל נוף', signTitle: '' }, st || {});
     S.summaries = await DB.summaries();
+    if (!S.settings.supervisorName) { S.first = true; S.screen = 'settings'; }
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignore */ }
     render();
     try {
       const c = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
