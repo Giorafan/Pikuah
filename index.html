@@ -4,7 +4,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
 <style>
 /* Layout: a one-column field sheet. Big touch targets, hairline rules and small-caps labels borrowed from a plan-sheet title block. */
 :root {
@@ -25,7 +25,7 @@
   --improve-bg: #E1ECF8;
   --danger: #B3321F;
   --shadow: 0 1px 2px rgba(23, 33, 28, .07), 0 6px 18px rgba(23, 33, 28, .06);
-  --f-display: 'Frank Ruhl Libre', 'David', serif;
+  --f-display: 'Heebo', 'Arial Hebrew', Arial, sans-serif;
   --f-body: 'Heebo', 'Arial Hebrew', Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
@@ -74,7 +74,7 @@ button { cursor: pointer; }
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
   display: flex; align-items: center; gap: 10px; min-height: 56px;
 }
-.top h1 { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 22px; line-height: 1.2; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top h1 { margin: 0; font-family: var(--f-body); font-weight: 700; font-size: 22px; line-height: 1.2; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top .sub { font-size: 12px; color: var(--muted); font-family: var(--f-body); font-weight: 400; display: block; }
 .saved { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .icon-btn {
@@ -151,7 +151,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .item .go { padding-inline-end: 8px; display: grid; place-items: center; color: var(--muted); }
 .rep { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
 .rep .main { display: block; width: 100%; background: none; border: 0; text-align: right; padding: 14px 16px 10px; }
-.rep .main .t { font-family: var(--f-display); font-weight: 900; font-size: 20px; line-height: 1.25; }
+.rep .main .t { font-family: var(--f-body); font-weight: 700; font-size: 20px; line-height: 1.25; }
 .rep .main .m { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .rep .main .stats { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .rep .acts { display: flex; border-top: 1px solid var(--line); }
@@ -201,7 +201,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 /* export */
 .count-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .count { background: var(--surface-2); border-radius: 12px; padding: 10px; text-align: center; }
-.count b { display: block; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: var(--f-display); font-weight: 900; }
+.count b { display: block; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: var(--f-body); font-weight: 700; }
 .count span { font-size: 12px; color: var(--muted); }
 .pv { display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .pv canvas { width: 100%; height: auto; display: block; background: #fff; border-radius: 4px; box-shadow: var(--shadow); border: 1px solid var(--line); }
@@ -243,10 +243,26 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 @keyframes recp { 50% { box-shadow: 0 0 0 8px rgba(179, 50, 31, .22); } }
 @media (prefers-reduced-motion: reduce) { .btn.rec.on { animation: none; } }
 
+.irow { display: flex; gap: 8px; align-items: stretch; }
+.irow .item { flex: 1; min-width: 0; }
+.mv { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.mv button { flex: 1; width: 48px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.mv button:disabled { opacity: .35; cursor: default; }
+.mv button:active:not(:disabled) { background: var(--accent-soft); }
+
+.att .em { margin-top: 8px; width: 100%; }
+.doc { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--surface); }
+.doc .ic { color: var(--muted); display: grid; place-items: center; }
+.doc .dn { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+.doc .dn small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.rcp { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.rcp span { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 4px 12px; font-size: 13px; direction: ltr; }
+
 </style>
 <div id="app"></div>
 <input type="file" id="in-cam" accept="image/*" capture="environment" hidden>
 <input type="file" id="in-gal" accept="image/*" multiple hidden>
+<input type="file" id="in-doc" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.dwg,.dxf,.zip,.kml,.kmz" multiple hidden>
 <input type="file" id="in-img" accept="image/*" hidden>
 <div id="sk" class="sk" hidden role="dialog" aria-modal="true" aria-label="סקיצה על התמונה"></div>
 <script>
@@ -396,7 +412,13 @@ const SupLib = (function () {
     const indent = '<w:ind w:left="720"/>';
     (m.items || []).forEach(it => {
       const ph = it.photos || [];
-      body.push(para(runs(it.text || '', {}), { style: 'ListParagraph', numId: 1, keepNext: ph.length > 0, after: ph.length ? 60 : 0 }));
+      const hasDocs = (it.docs || []).length > 0, tail = ph.length > 0 || hasDocs;
+      if (it.title) {
+        body.push(para(runs(it.title, { b: true }), { style: 'ListParagraph', numId: 1, keepNext: true, after: 40 }));
+        if (it.text) body.push(para(runs(it.text, {}), { ind: indent, keepNext: tail, after: tail ? 60 : 0 }));
+      } else {
+        body.push(para(runs(it.text || '', {}), { style: 'ListParagraph', numId: 1, keepNext: tail, after: tail ? 60 : 0 }));
+      }
       if (ph.length === 1) {
         body.push(para(drawing(ph[0], 15.4 * CM, 13 * CM, undefined, true), { ind: indent, line: 240, after: 160 }));
       } else {
@@ -406,6 +428,7 @@ const SupLib = (function () {
           body.push(para(row.map(p => drawing(p, 7.5 * CM, 9 * CM, undefined, true)).join(sp), { ind: indent, line: 240, after: 160 }));
         }
       }
+      if ((it.docs || []).length) body.push(para(runs('מסמכים מצורפים: ' + it.docs.join(', '), { c: '66756B' }), { ind: indent, after: 160 }));
     });
     body.push(blank());
 
@@ -562,6 +585,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     text: '<path d="M5 6h14M12 6v13M9 19h6"/>',
     undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>',
     trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+    up: '<path d="M6 15l6-6 6 6"/>',
+    down: '<path d="M6 9l6 6 6-6"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     check: '<path d="M5 12l5 5 9-10"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
@@ -629,13 +654,14 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     S.summaries.forEach(x => { const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(x.projNo || ''); if (m && m[2] === y) max = Math.max(max, +m[1]); });
     return (max + 1) + '/' + y;
   }
-  function newAttendee(a) { return Object.assign({ id: uid(), name: '', role: '', org: '' }, a || {}); }
+  function newAttendee(a) { return Object.assign({ id: uid(), name: '', role: '', org: '', email: '' }, a || {}); }
   function newReport(from) {
     const s = S.settings;
-    const r = { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), projNo: nextProjNo(), project: '', location: '', attendees: [], ccAll: true, ccExtra: '', findings: [] };
+    const r = { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), projNo: nextProjNo(), project: '', location: '', attendees: [], cc: [], ccAll: true, ccExtra: '', findings: [] };
     if (from) {
-      r.project = from.project || ''; r.projNo = from.projNo || r.projNo; r.location = from.location || ''; r.ccAll = from.ccAll !== false; r.ccExtra = from.ccExtra || '';
-      r.attendees = from.attendees.map(a => newAttendee({ name: a.name, role: a.role, org: a.org }));
+      r.project = from.project || ''; r.projNo = from.projNo || r.projNo; r.location = from.location || ''; r.ccAll = from.ccAll !== false; r.ccExtra = '';
+      r.attendees = from.attendees.map(a => newAttendee({ name: a.name, role: a.role, org: a.org, email: a.email || '' }));
+      r.cc = (from.cc || []).map(a => newAttendee({ name: a.name, role: a.role, org: a.org, email: a.email || '' }));
     } else if (s.supervisorName || s.officeName) {
       r.attendees = [newAttendee({ name: s.supervisorName || '', role: s.supervisorRole || 'אדריכל נוף', org: s.officeName || '' })];
     }
@@ -644,11 +670,14 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function normalizeReport(r) {
     if (!r) return r;
     r.letterDate = r.letterDate || r.date || todayISO(); r.projNo = r.projNo || '';
-    r.ccAll = r.ccAll !== false; r.ccExtra = r.ccExtra || '';
-    r.findings.forEach(f => { if (f.text == null) f.text = [f.note, f.instruction].filter(Boolean).join(' '); });
+    r.ccAll = r.ccAll !== false; r.cc = (r.cc || []).map(a => newAttendee(a));
+    r.attendees = r.attendees.map(a => Object.assign({ email: '' }, a));
+    String(r.ccExtra || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach(x => r.cc.push(newAttendee({ name: x })));
+    r.ccExtra = '';
+    r.findings.forEach(f => { if (f.text == null) f.text = [f.note, f.instruction].filter(Boolean).join(' '); f.title = f.title || ''; f.docs = f.docs || []; });
     return r;
   }
-  const newFinding = () => ({ id: uid(), text: '', photos: [] });
+  const newFinding = () => ({ id: uid(), title: '', text: '', photos: [], docs: [] });
   const curFinding = () => S.report && S.report.findings.find(f => f.id === S.fid);
   const photoSrc = p => p.flat || p.orig;
   const photoDims = p => p.flat ? { w: p.fw, h: p.fh } : { w: p.w, h: p.h };
@@ -668,7 +697,15 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function ccLines(r) {
     const out = r.ccAll ? ['משתתפים'] : [];
-    String(r.ccExtra || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
+    (r.cc || []).filter(a => a.name || a.role || a.org).forEach(a => out.push([a.name, [a.role, a.org].filter(Boolean).join(', ')].filter(Boolean).join(' – ')));
+    return out;
+  }
+  function recipients(r) {
+    const seen = new Set(), out = [];
+    r.attendees.concat(r.cc || []).forEach(a => {
+      const e = String(a.email || '').trim().toLowerCase();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !seen.has(e)) { seen.add(e); out.push({ email: e, name: a.name || '' }); }
+    });
     return out;
   }
 
@@ -839,12 +876,15 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const inner = S.tab === 'details' ? viewDetails() : S.tab === 'findings' ? viewFindingsTab() : viewExport();
     return shell(inner, r.project || 'דו״ח חדש', fmtDate(r.date));
   }
-  function attRow(a) {
-    return '<div class="att"><div class="top-r"><input type="text" placeholder="שם" aria-label="שם" value="' + esc(a.name) + '" data-bind="a:' + a.id + ':name">' +
-      '<button class="icon-btn" data-act="att-del" data-id="' + a.id + '" aria-label="הסר משתתף">' + icon('x') + '</button></div>' +
-      '<div class="grid2"><input type="text" list="roles" placeholder="תפקיד" aria-label="תפקיד" value="' + esc(a.role) + '" data-bind="a:' + a.id + ':role">' +
-      '<input type="text" placeholder="חברה / גוף" aria-label="חברה או גוף" value="' + esc(a.org) + '" data-bind="a:' + a.id + ':org"></div></div>';
+  function attRow(a, kind) {
+    const p = (kind || 'a') + ':' + a.id + ':', del = kind === 'c' ? 'cc-del' : 'att-del';
+    return '<div class="att"><div class="top-r"><input type="text" placeholder="שם" aria-label="שם" value="' + esc(a.name) + '" data-bind="' + p + 'name">' +
+      '<button class="icon-btn" data-act="' + del + '" data-id="' + a.id + '" aria-label="הסר">' + icon('x') + '</button></div>' +
+      '<div class="grid2"><input type="text" list="roles" placeholder="תפקיד" aria-label="תפקיד" value="' + esc(a.role) + '" data-bind="' + p + 'role">' +
+      '<input type="text" placeholder="חברה / גוף" aria-label="חברה או גוף" value="' + esc(a.org) + '" data-bind="' + p + 'org"></div>' +
+      '<input type="email" dir="ltr" inputmode="email" autocomplete="off" placeholder="כתובת מייל (לשליחת הדו״ח)" aria-label="כתובת מייל" class="em" value="' + esc(a.email || '') + '" data-bind="' + p + 'email"></div>';
   }
+  const ccRow = a => attRow(a, 'c');
   function viewDetails() {
     const r = S.report;
     return '<div class="stack">' +
@@ -858,22 +898,37 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       '<div id="atts">' + r.attendees.map(attRow).join('') + '</div>' +
       '<button class="btn soft" style="margin-top:12px;width:100%" data-act="att-add">' + icon('plus') + ' הוסף משתתף</button>' +
       '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">משתתפים עם אותו תפקיד ואותה חברה מופיעים בדו״ח בשורה אחת.</p></div>' +
-      '<div class="card"><h2>העתק</h2><label class="chk"><input type="checkbox" data-bind="r:ccAll"' + (r.ccAll ? ' checked' : '') + '><span>העתק לכל המשתתפים</span></label>' +
-      '<div style="margin-top:12px">' + area('העתקים נוספים (שורה לכל נמען)', 'r:ccExtra', r.ccExtra, 'למשל: שם – חברה') + '</div></div>' +
+      '<div class="card"><h2>מכותבים (העתק)</h2><label class="chk"><input type="checkbox" data-bind="r:ccAll"' + (r.ccAll ? ' checked' : '') + '><span>העתק לכל המשתתפים</span></label>' +
+      '<div id="ccs" style="margin-top:12px">' + (r.cc || []).map(ccRow).join('') + '</div>' +
+      '<button class="btn soft" style="margin-top:12px;width:100%" data-act="cc-add">' + icon('plus') + ' הוסף מכותב</button></div>' +
       '</div>';
   }
-  function findingItem(f, i) {
-    const p = f.photos[0];
+  function findingItem(f, i, all) {
+    const p = f.photos[0], n = all.length;
+    return '<div class="irow">' + findingBtn(f, i, p) +
+      (n > 1 ? '<div class="mv"><button data-act="f-up" data-id="' + f.id + '" aria-label="העבר הערה ' + (i + 1) + ' למעלה"' + (i === 0 ? ' disabled' : '') + '>' + icon('up', 22) + '</button>' +
+        '<button data-act="f-down" data-id="' + f.id + '" aria-label="העבר הערה ' + (i + 1) + ' למטה"' + (i === n - 1 ? ' disabled' : '') + '>' + icon('down', 22) + '</button></div>' : '') + '</div>';
+  }
+  function findingBtn(f, i, p) {
     return '<button class="item" data-act="f-open" data-id="' + f.id + '"><span class="thumb"><span class="num">' + (i + 1) + '</span>' +
       (p ? '<img src="' + (p.th || photoSrc(p)) + '" alt="">' : icon('camera', 24)) + '</span>' +
-      '<span class="body"><span class="t clamp">' + esc(f.text || 'ללא טקסט') + '</span>' +
+      '<span class="body"><span class="t clamp">' + esc(f.title || f.text || 'ללא טקסט') + '</span>' +
       '<span class="m">' + (f.photos.length ? f.photos.length + ' תמונות' : 'ללא תמונה') + '</span></span>' +
       '<span class="go">' + icon('back') + '</span></button>';
+  }
+  function moveFinding(id, d) {
+    const a = S.report.findings, i = a.findIndex(x => x.id === id), j = i + d;
+    if (i < 0 || j < 0 || j >= a.length) return;
+    const t = a[i]; a[i] = a[j]; a[j] = t; touch();
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+    const nb = document.querySelector('[data-act=' + (d < 0 ? 'f-up' : 'f-down') + '][data-id="' + id + '"]');
+    if (nb && !nb.disabled) nb.focus();
+    toast('הערה ' + (i + 1) + ' הועברה למקום ' + (j + 1));
   }
   function viewFindingsTab() {
     const r = S.report;
     return '<div class="stack"><button class="btn primary big" data-act="f-new">' + icon('plus', 22) + ' הערה חדשה</button>' +
-      (r.findings.length ? r.findings.map(findingItem).join('') :
+      (r.findings.length ? r.findings.map((f, i, all) => findingItem(f, i, all)).join('') :
         '<div class="empty"><b>עוד אין הערות</b>לחץ על ״הערה חדשה״, צלם, הוסף סקיצה וכתוב את ההוראה לקבלן.</div>') + '</div>';
   }
   function photosHTML(f) {
@@ -893,10 +948,15 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       '<div class="card"><h2>תמונות</h2><div class="photos" id="photos">' + photosHTML(f) + '</div>' +
       '<div class="row"><button class="btn primary" data-act="cam">' + icon('camera') + ' צלם</button><button class="btn" data-act="gal">' + icon('image') + ' מהגלריה</button></div>' +
       '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">הקש על תמונה כדי לצייר עליה חצים, עיגולים והערות.</p></div>' +
+      '<div class="card"><h2>כותרת ההערה</h2>' + fld('כותרת (לא חובה)', 'f:title', f.title, 'placeholder="למשל: ריצוף שביל אופניים"') +
+      '<p style="margin:8px 0 0;font-size:13px;color:var(--muted)">אם תשאיר ריק, בדו״ח יופיע רק המספר.</p></div>' +
       '<div class="card"><h2>הערה / הוראה לקבלן</h2>' +
       '<button class="btn rec" id="rec-btn" data-act="rec" aria-pressed="false"' + (recSupported() ? '' : ' aria-disabled="true"') + '>' + icon('mic', 24) + '<span>הקלט הערה</span></button>' +
-      '<div class="hint">' + icon('mic', 18) + '<span>' + (recSupported() ? 'הקש, דבר בעברית, והטקסט נכתב מיד. אפשר לערוך אותו אחר כך.' : (S.dl ? 'כאן אפשר להכתיב דרך המקלדת. כפתור ההקלטה פועל בגרסה העצמאית של האפליקציה.' : 'להכתבה בקול: לחץ על המיקרופון במקלדת הטלפון.')) + '</span></div>' +
+      '<div class="hint" id="rec-hint" aria-live="polite">' + icon('mic', 18) + '<span>' + esc(recHint()) + '</span></div>' +
       area('הטקסט שיופיע בדו״ח', 'f:text', f.text, 'למשל: יש לנקות את כל הערוגות מפסולת בנייה') + '</div>' +
+      '<div class="card"><h2>מסמכים מצורפים</h2><div id="docs">' + docsHTML(f) + '</div>' +
+      '<button class="btn" style="margin-top:12px;width:100%" data-act="doc-add">' + icon('file') + ' הוסף מסמך</button>' +
+      '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">PDF, Word, Excel, DWG ועוד. שמות הקבצים מופיעים בדו״ח, והקבצים נשלחים יחד איתו במייל.</p></div>' +
       '<button class="btn danger" data-act="f-del" data-arm="בטוח? לחץ שוב למחיקה">' + icon('trash') + ' מחק הערה</button></div>' +
       '<div class="fab-bar"><div class="in"><button class="btn primary big" data-act="f-back">' + icon('check', 22) + ' שמור וחזור</button></div></div>';
   }
@@ -913,6 +973,11 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       warn.map(w => '<div class="banner">' + esc(w) + '</div>').join('') + '</div>' +
       '<div class="card"><h2>הורדה</h2><div class="row"><button class="btn primary" data-act="dl-docx">' + icon('file') + ' Word</button><button class="btn primary" data-act="dl-pdf">' + icon('file') + ' PDF</button></div>' +
       '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">' + (S.dl ? 'אחרי הלחיצה תתבקש לאשר את שמירת הקובץ.' : 'בטלפון ייפתח תפריט שיתוף: שמירה בקבצים, וואטסאפ או מייל.') + '</p></div>' +
+      '<div class="card"><h2>שליחה במייל</h2>' + (recipients(r).length ?
+        '<div class="rcp">' + recipients(r).map(x => '<span>' + esc(x.email) + '</span>').join('') + '</div>' +
+        '<button class="btn primary" style="width:100%" data-act="send-mail">' + icon('file') + ' שלח PDF לכל הנמענים</button>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">הכתובות נלקחות מהמשתתפים והמכותבים. בטלפון ייפתח תפריט שיתוף, ובמחשב יורד קובץ ה-PDF ונפתח מייל עם הנמענים. את הקובץ צריך לצרף ידנית.</p>' :
+        '<p style="margin:0;font-size:14px;color:var(--muted)">הוסף כתובות מייל בלשונית פרטים (משתתפים או מכותבים) כדי לשלוח את הדו״ח.</p>') + '</div>' +
       '<div class="card"><h2>תצוגה מקדימה</h2><div class="pv" id="pv"><div class="pv-note">מכין תצוגה…</div></div></div></div>';
   }
 
@@ -1029,7 +1094,9 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
 
     const IND = 42, TW = CW - IND;
     r.findings.forEach((f, idx) => {
-      const tf = F(400, S12), lines = wrap(f.text || '', tf, TW), textH = Math.max(1, lines.length) * LH;
+      const tf = F(400, S12), lines = wrap(f.text || '', tf, TW), tl = f.title ? wrap(f.title, F(700, S12), TW) : [];
+      const dl = (f.docs || []).length ? wrap('מסמכים מצורפים: ' + f.docs.map(d => d.name).join(', '), tf, TW) : [];
+      const textH = Math.max(1, tl.length + lines.length) * LH;
       const P = f.photos.filter(p => imgs.has(p.id));
       const rows = P.length === 1 ? [[P[0]]] : P.reduce((a, p, i) => { if (i % 2 === 0) a.push([p]); else a[a.length - 1].push(p); return a; }, []);
       const size = (p, many) => { const im = imgs.get(p.id); return many ? fit(im.naturalWidth, im.naturalHeight, (TW - 12) / 2, 330) : fit(im.naturalWidth, im.naturalHeight, TW, 500); };
@@ -1038,7 +1105,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       if (y + need > BOTTOM && need <= BOTTOM - TOP) newPage();
       ops.push({ k: 'r', x: right - 26, y: y - 1, w: 26, h: 26, r: 13, fill: GREEN });
       T(String(idx + 1), right - 13, y + 12, F(700, S12), '#FFFFFF', 'center');
-      if (lines.length) lines.forEach(ln => { if (y + LH > BOTTOM) newPage(); T(ln, right - IND, y + LH / 2, tf, INK, 'right'); y += LH; }); else y += LH;
+      tl.forEach(ln => { if (y + LH > BOTTOM) newPage(); T(ln, right - IND, y + LH / 2, F(700, S12), INK, 'right'); y += LH; });
+      if (lines.length) lines.forEach(ln => { if (y + LH > BOTTOM) newPage(); T(ln, right - IND, y + LH / 2, tf, INK, 'right'); y += LH; }); else if (!tl.length) y += LH;
       y += 8;
       rows.forEach(row => {
         const h = rowH(row);
@@ -1051,6 +1119,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
         });
         y += h + 16;
       });
+      dl.forEach(ln => { if (y + LH > BOTTOM) newPage(); T(ln, right - IND, y + LH / 2, tf, MUTED, 'right'); y += LH; });
+      if (dl.length) y += 8;
     });
 
     /* closing: cc list on the right, "רשם" with signature on the left */
@@ -1158,7 +1228,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       letterDate: letterDate(r.letterDate), projNo: r.projNo, location: r.location, subject: r.project, visitDate: dotDate(r.date),
       participants: participantLines(r.attendees),
       items: r.findings.map(f => ({
-        text: f.text,
+        title: f.title, text: f.text, docs: (f.docs || []).map(d => d.name),
         photos: f.photos.map(p => { const d = photoDims(p); return { bytes: dataBytes(photoSrc(p)), w: d.w, h: d.h, ext: 'jpg' }; })
       })),
       cc: ccLines(r), signTitle: s.signTitle, signName: s.supervisorName,
@@ -1171,20 +1241,47 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     try { const blob = SupLib.buildDocx(docModel()); busy(null); await saveFile(blob, fileBase() + '.docx'); }
     catch (e) { console.error(e); busy(null); toast('יצירת קובץ Word נכשלה'); }
   }
+  async function makePdfBlob() {
+    const lay = await layoutReport(S.report, S.settings), pages = [];
+    for (let i = 0; i < lay.pages.length; i++) {
+      $('#busy-t').textContent = 'מכין PDF… עמוד ' + (i + 1) + ' מתוך ' + lay.pages.length; await tick();
+      const cv = renderPage(lay, i, 2);
+      pages.push({ bytes: dataBytes(cv.toDataURL('image/jpeg', 0.9)), w: cv.width, h: cv.height });
+      cv.width = cv.height = 1;
+    }
+    return SupLib.buildPdf(pages, fileBase());
+  }
   async function exportPdf() {
     flushNow();
     busy('מכין PDF…'); await tick();
+    try { const blob = await makePdfBlob(); busy(null); await saveFile(blob, fileBase() + '.pdf'); }
+    catch (e) { console.error(e); busy(null); toast('יצירת PDF נכשלה'); }
+  }
+  async function sendMail() {
+    flushNow();
+    const r = S.report, to = recipients(r).map(x => x.email);
+    if (!to.length) { toast('הוסף כתובות מייל למשתתפים או למכותבים'); return; }
+    busy('מכין PDF לשליחה…'); await tick();
+    let blob; try { blob = await makePdfBlob(); } catch (e) { console.error(e); busy(null); toast('יצירת PDF נכשלה'); return; }
+    busy(null);
+    const name = fileBase() + '.pdf', subject = 'דו״ח פיקוח עליון' + (r.projNo ? ' ' + r.projNo : '') + (r.project ? ' – ' + r.project : '');
+    const body = 'שלום,\nמצורף דו״ח פיקוח עליון מתאריך ' + dotDate(r.date) + (r.location ? ' – ' + r.location : '') + '.\n\nבברכה,\n' + (S.settings.supervisorName || '');
+    try { if (navigator.clipboard) await navigator.clipboard.writeText(to.join(', ')); } catch (e) { /* ignore */ }
+    const docs = r.findings.reduce((a, f) => a.concat((f.docs || []).map(d => new File([d.blob], d.name, { type: d.type }))), []);
+    const file = new File([blob], name, { type: 'application/pdf' });
     try {
-      const lay = await layoutReport(S.report, S.settings), pages = [];
-      for (let i = 0; i < lay.pages.length; i++) {
-        $('#busy-t').textContent = 'מכין PDF… עמוד ' + (i + 1) + ' מתוך ' + lay.pages.length; await tick();
-        const cv = renderPage(lay, i, 2);
-        pages.push({ bytes: dataBytes(cv.toDataURL('image/jpeg', 0.9)), w: cv.width, h: cv.height });
-        cv.width = cv.height = 1;
+      const files = [file].concat(docs);
+      if (!S.dl && /Android|iPhone|iPad/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({ files, title: subject, text: body });
+        toast('כתובות הנמענים הועתקו. הדבק אותן בשדה "אל" במייל.'); return;
       }
-      const blob = SupLib.buildPdf(pages, fileBase());
-      busy(null); await saveFile(blob, fileBase() + '.pdf');
-    } catch (e) { console.error(e); busy(null); toast('יצירת PDF נכשלה'); }
+    } catch (e) { if (e && e.name === 'AbortError') { toast('השיתוף בוטל'); return; } }
+    await saveFile(blob, name);
+    if (!S.dl) {
+      docs.forEach((d, i) => setTimeout(() => { const u = URL.createObjectURL(d), a = document.createElement('a'); a.href = u; a.download = d.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 30000); }, 400 * (i + 1)));
+      location.href = 'mailto:' + to.join(',') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      toast('נפתח מייל עם הנמענים. צרף את קובץ ה-PDF שירד למכשיר.');
+    } else toast('הנמענים הועתקו. שלח את הקובץ בעצמך.');
   }
   function flushNow() { dirty = true; flush(); }
 
@@ -1385,9 +1482,17 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
 
   /* ---------- voice note: record and transcribe to text ---------- */
-  const REC = { r: null, on: false, base: '', fin: '' };
+  const REC = { r: null, on: false, base: '', t0: 0, fails: 0, audio: false, timer: 0 };
   const SR = () => window.SpeechRecognition || window.webkitSpeechRecognition;
   const recSupported = () => !S.dl && !!SR();
+  const IS_ANDROID = /Android/i.test(navigator.userAgent);
+  const IS_BRAVE = !!(navigator.brave && navigator.brave.isBrave);
+  function recHint() {
+    if (S.dl) return 'כאן אפשר להכתיב דרך המקלדת. כפתור ההקלטה פועל בגרסה העצמאית של האפליקציה.';
+    if (!SR()) return /Firefox/i.test(navigator.userAgent) ? 'Firefox אינו תומך בהקלטה לטקסט. השתמש ב-Chrome, Edge או Safari.' : 'הדפדפן הזה לא תומך בהקלטה לטקסט. השתמש ב-Chrome, Edge או Safari, או הכתב דרך המקלדת.';
+    return 'הקש, דבר בעברית, והטקסט נכתב מיד. אפשר לערוך אותו אחר כך.';
+  }
+  function recStatus(m) { const h = $('#rec-hint'); if (h) h.querySelector('span').textContent = m || recHint(); }
   function recUI() {
     const b = $('#rec-btn'); if (!b) return;
     b.classList.toggle('on', REC.on); b.setAttribute('aria-pressed', String(REC.on));
@@ -1397,41 +1502,82 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const ta = $('[data-bind="f:text"]'), f = curFinding(); if (!ta || !f) return;
     ta.value = v; autosize(ta); f.text = v; touch();
   }
-  function recStop() { REC.on = false; if (REC.r) { try { REC.r.stop(); } catch (e) { /* ignore */ } } recUI(); }
+  /* Rebuilds the whole session transcript from every result on each event, so it is safe even when
+     the engine repeats earlier results (Android) or reports resultIndex wrongly. Cumulative results
+     ("שלום", "שלום עולם") replace each other instead of being appended. */
+  function recJoin(results) {
+    const parts = []; let interim = [];
+    for (let i = 0; i < results.length; i++) {
+      const t = String(results[i][0].transcript || '').trim(); if (!t) continue;
+      if (results[i].isFinal) {
+        const last = parts[parts.length - 1];
+        if (last && (t === last || last.startsWith(t))) continue;
+        if (last && t.startsWith(last)) parts[parts.length - 1] = t; else parts.push(t);
+      } else interim.push(t);
+    }
+    let tail = interim.join(' ').trim();
+    const last = parts[parts.length - 1];
+    if (last && tail) { if (tail === last || last.startsWith(tail)) tail = ''; else if (tail.startsWith(last)) tail = tail.slice(last.length).trim(); }
+    return parts.concat(tail ? [tail] : []).join(' ');
+  }
+  function recStop() { REC.on = false; clearTimeout(REC.timer); if (REC.r) { try { REC.r.stop(); } catch (e) { /* ignore */ } } recUI(); recStatus(''); }
+  function recFail(msg) { REC.on = false; clearTimeout(REC.timer); recUI(); recStatus(msg); toast(msg); }
   function recToggle() {
     if (REC.on) { recStop(); return; }
-    if (!recSupported()) {
-      toast(S.dl ? 'ההקלטה זמינה בגרסה העצמאית של האפליקציה, מחוץ ל-Claude.' : 'הדפדפן הזה לא תומך בהקלטה. אפשר להכתיב דרך המקלדת.');
-      return;
-    }
-    const ta = $('[data-bind="f:text"]'); if (!ta) return;
+    if (!recSupported()) { toast(recHint()); return; }
+    if (!$('[data-bind="f:text"]')) return;
     const r = new (SR())();
-    r.lang = 'he-IL'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
-    const rebase = () => { const v = ta.value.trim(); REC.base = v ? v + ' ' : ''; REC.fin = ''; };
-    rebase(); REC.r = r; REC.on = true;
-    r.onresult = e => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) REC.fin += (REC.fin ? ' ' : '') + t.trim(); else interim += t;
-      }
-      recSet(REC.base + REC.fin + (interim ? (REC.fin ? ' ' : '') + interim.trim() : ''));
+    r.lang = 'he-IL'; r.continuous = !IS_ANDROID; r.interimResults = true; r.maxAlternatives = 1;
+    const begin = () => {
+      const v = ($('[data-bind="f:text"]') || { value: '' }).value.trim();
+      REC.base = v ? v + ' ' : ''; REC.audio = false; REC.t0 = Date.now();
+      clearTimeout(REC.timer);
+      REC.timer = setTimeout(() => { if (REC.on && !REC.audio) recStatus('המיקרופון לא מגיב. בדוק שאישרת גישה (המנעול ליד הכתובת) ושהמיקרופון במחשב לא מושתק.'); }, 6000);
+      r.start();
     };
+    REC.r = r; REC.on = true; REC.fails = 0;
+    r.onaudiostart = () => { REC.audio = true; REC.fails = 0; clearTimeout(REC.timer); recStatus('מקשיב… דבר עכשיו'); };
+    r.onspeechstart = () => recStatus('שומע דיבור…');
+    r.onresult = e => { REC.audio = true; recSet(REC.base + recJoin(e.results)); };
     r.onerror = e => {
       const c = e && e.error;
-      if (c === 'no-speech' || c === 'aborted') return;
-      REC.on = false;
-      toast(c === 'not-allowed' || c === 'service-not-allowed' ? 'אין הרשאה למיקרופון. אפשר אותה בהגדרות הדפדפן.' :
-        c === 'audio-capture' ? 'לא נמצא מיקרופון.' : c === 'network' ? 'אין חיבור לשירות הזיהוי.' : 'ההקלטה נעצרה.');
+      if (c === 'aborted') return;
+      if (c === 'no-speech') { recStatus('לא נשמע דיבור. ממשיך להאזין…'); return; }
+      if (c === 'not-allowed' || c === 'service-not-allowed') recFail(IS_BRAVE ? 'Brave חוסם זיהוי דיבור. נסה ב-Chrome או Safari.' : 'אין הרשאה למיקרופון או לזיהוי דיבור. אשר גישה בהגדרות האתר בדפדפן ובהגדרות הפרטיות של המערכת.');
+      else if (c === 'audio-capture') recFail('לא נמצא מיקרופון. בדוק שהוא מחובר, נבחר במערכת ההפעלה ואינו מושתק.');
+      else if (c === 'network') recFail(IS_BRAVE ? 'Brave חוסם את שירות הזיהוי. נסה ב-Chrome או Safari.' : 'אין חיבור לשירות זיהוי הדיבור של הדפדפן. בדוק חיבור לאינטרנט (בכרום השירות הוא של Google).');
+      else if (c === 'language-not-supported') recFail('הדפדפן לא תומך בזיהוי עברית.');
+      else recFail('ההקלטה נעצרה (' + (c || 'שגיאה') + ').');
     };
     r.onend = () => {
-      if (REC.on) { rebase(); try { r.start(); return; } catch (err) { REC.on = false; } }
+      if (REC.on) {
+        if (!REC.audio && Date.now() - REC.t0 < 1500) REC.fails++;
+        if (REC.fails >= 3) { recFail('ההקלטה לא מצליחה להתחיל במכשיר הזה. נסה Chrome, Edge או Safari מעודכנים, או הכתב דרך המקלדת.'); REC.r = null; return; }
+        setTimeout(() => { if (!REC.on) return; try { begin(); } catch (err) { recFail('לא הצלחתי להפעיל את ההקלטה מחדש.'); } }, IS_ANDROID ? 120 : 0);
+        return;
+      }
       REC.r = null; recUI();
     };
-    try { r.start(); recUI(); } catch (e) { REC.on = false; REC.r = null; recUI(); toast('לא הצלחתי להתחיל הקלטה.'); }
+    try { begin(); recUI(); recStatus('מתחבר למיקרופון…'); } catch (e) { REC.r = null; recFail('לא הצלחתי להתחיל הקלטה.'); }
   }
 
   /* ---------- photo grid helpers ---------- */
+  const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  function docsHTML(f) {
+    if (!(f.docs || []).length) return '<div class="ph-empty">עוד אין מסמכים.</div>';
+    return f.docs.map(d => '<div class="doc"><span class="ic">' + icon('file', 20) + '</span><span class="dn">' + esc(d.name) + '<small>' + fmtSize(d.size) + '</small></span>' +
+      '<button class="icon-btn" data-act="doc-del" data-id="' + d.id + '" aria-label="הסר מסמך">' + icon('x', 18) + '</button></div>').join('');
+  }
+  function updateDocs() { const el = $('#docs'); const f = curFinding(); if (el && f) el.innerHTML = docsHTML(f); }
+  function addDocs(files) {
+    const f = curFinding(); if (!f || !files.length) return;
+    let n = 0;
+    files.forEach(file => {
+      if (file.size > 25 * 1048576) { toast('הקובץ ' + file.name + ' גדול מ-25MB ולא נוסף'); return; }
+      f.docs.push({ id: uid(), name: file.name, type: file.type || 'application/octet-stream', size: file.size, blob: file }); n++;
+    });
+    if (n) { touch(); updateDocs(); toast(n === 1 ? 'המסמך נוסף' : n + ' מסמכים נוספו'); }
+  }
   function updatePhotos() { const el = $('#photos'); const f = curFinding(); if (el && f) el.innerHTML = photosHTML(f); }
   async function addPhotos(files, openEditor) {
     const f = curFinding(); if (!f || !files.length) return;
@@ -1530,6 +1676,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if (!S.report) return;
     if (parts[0] === 'r') S.report[parts[1]] = v;
     else if (parts[0] === 'a') { const a = S.report.attendees.find(x => x.id === parts[1]); if (a) a[parts[2]] = v; }
+    else if (parts[0] === 'c') { const a = S.report.cc.find(x => x.id === parts[1]); if (a) a[parts[2]] = v; }
     else if (parts[0] === 'f') { const f = curFinding(); if (f) f[parts[1]] = v; }
     touch();
     if (parts[0] === 'r' && (parts[1] === 'project' || parts[1] === 'date')) {
@@ -1543,6 +1690,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   });
   document.addEventListener('change', e => {
     const t = e.target;
+    if (t.id === 'in-doc') { const files = Array.from(t.files || []); t.value = ''; addDocs(files); return; }
     if (t.id === 'in-cam' || t.id === 'in-gal') { const files = Array.from(t.files || []); const cam = t.id === 'in-cam'; t.value = ''; addPhotos(files, cam); }
     else if (t.id === 'in-img') { const f = t.files && t.files[0]; t.value = ''; setImage(pendingKind, f); }
     else if (t.dataset && t.dataset.bind) bindValue(t);
@@ -1568,8 +1716,12 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     'del': (b) => armed(b, async () => { await DB.del(b.dataset.id); S.summaries = S.summaries.filter(x => x.id !== b.dataset.id); render(); toast('הדו״ח נמחק'); }),
     'tab': (b) => { S.tab = b.dataset.tab; S.pvTok++; render(); window.scrollTo(0, 0); },
     'att-add': () => { const a = newAttendee(); S.report.attendees.push(a); touch(); $('#atts').insertAdjacentHTML('beforeend', attRow(a)); const i = $('#atts .att:last-child input'); if (i) i.focus(); },
+    'cc-add': () => { const a = newAttendee(); S.report.cc.push(a); touch(); $('#ccs').insertAdjacentHTML('beforeend', ccRow(a)); const i = $('#ccs .att:last-child input'); if (i) i.focus(); },
+    'cc-del': (b) => { S.report.cc = S.report.cc.filter(a => a.id !== b.dataset.id); touch(); b.closest('.att').remove(); },
     'att-del': (b) => { S.report.attendees = S.report.attendees.filter(a => a.id !== b.dataset.id); touch(); b.closest('.att').remove(); },
     'f-new': () => { const f = newFinding(); S.report.findings.push(f); S.fid = f.id; touch(); go('finding'); },
+    'f-up': (b) => moveFinding(b.dataset.id, -1),
+    'f-down': (b) => moveFinding(b.dataset.id, 1),
     'f-open': (b) => { S.fid = b.dataset.id; go('finding'); },
     'f-back': () => {
       const f = curFinding();
@@ -1577,6 +1729,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       S.fid = null; go('report', 'findings');
     },
     'f-del': (b) => armed(b, () => { S.report.findings = S.report.findings.filter(x => x.id !== S.fid); S.fid = null; touch(); go('report', 'findings'); toast('ההערה נמחקה'); }),
+    'doc-add': () => $('#in-doc').click(),
+    'doc-del': (b) => { const f = curFinding(); if (f) { f.docs = f.docs.filter(d => d.id !== b.dataset.id); touch(); updateDocs(); } },
     'cam': () => $('#in-cam').click(),
     'gal': () => $('#in-gal').click(),
     'ph-del': (b) => { const f = curFinding(); f.photos = f.photos.filter(p => p.id !== b.dataset.pid); touch(); updatePhotos(); },
@@ -1586,6 +1740,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     'img-reset': async (b) => { delete S.settings[b.dataset.kind + 'Img']; await DB.setMeta('settings', S.settings); render(); },
     'dl-docx': exportDocx,
     'dl-pdf': exportPdf,
+    'send-mail': sendMail,
     'sk-cancel': () => skClose(),
     'sk-save': () => skSave(),
     'sk-tool': (b) => { SK.tool = b.dataset.tool; SK.tpos = null; skRedraw(); skUI(); },
