@@ -258,6 +258,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .rcp { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
 .rcp span { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 4px 12px; font-size: 13px; direction: ltr; }
 
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; margin-inline-end: 8px; }
+.chip[data-s=ok] { color: var(--accent); }
+.chip[data-s=err], .chip[data-s=login] { color: #B3321F; border-color: #B3321F; }
+.banner .btn { margin-inline-start: 8px; }
+
 </style>
 <div id="app"></div>
 <input type="file" id="in-cam" accept="image/*" capture="environment" hidden>
@@ -599,7 +604,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   const icon = (n, s) => '<svg class="ic" width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[n] + '</svg>';
 
   /* ---------- state ---------- */
-  const S = { screen: 'list', tab: 'details', summaries: [], report: null, fid: null, settings: {}, dbOK: true, dl: null, pvTok: 0 };
+  const S = { pid: null, screen: 'list', tab: 'details', summaries: [], report: null, fid: null, settings: {}, dbOK: true, dl: null, pvTok: 0 };
   const APP = $('#app');
 
   /* ---------- storage (IndexedDB, memory fallback) ---------- */
@@ -623,6 +628,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       async setMeta(k, v) { if (!db) { memM.set(k, v); return true; } try { await wrap(st('meta', 'readwrite').put(v, k)); return true; } catch (e) { return false; } },
       async put(r) { if (!db) { memR.set(r.id, structuredClone(r)); return true; } try { await wrap(st('reports', 'readwrite').put(r)); return true; } catch (e) { return false; } },
       async get(id) { if (!db) return structuredClone(memR.get(id)); try { return await wrap(st('reports', 'readonly').get(id)); } catch (e) { return null; } },
+      async clearAll() { memR.clear(); memM.clear(); if (!db) return true; try { await wrap(st('reports', 'readwrite').clear()); await wrap(st('meta', 'readwrite').clear()); return true; } catch (e) { return false; } },
       async del(id) { if (!db) { memR.delete(id); return true; } try { await wrap(st('reports', 'readwrite').delete(id)); return true; } catch (e) { return false; } },
       summaries() {
         if (!db) return Promise.resolve(Array.from(memR.values()).map(summarize));
@@ -641,7 +647,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function summarize(r) {
     let photos = 0;
     r.findings.forEach(f => { photos += f.photos.length; });
-    return { id: r.id, projNo: r.projNo || '', project: r.project, date: r.date, location: r.location, updatedAt: r.updatedAt || 0, total: r.findings.length, photos };
+    return { id: r.id, projectId: r.projectId || '', projNo: r.projNo || '', project: r.project, date: r.date, location: r.location, updatedAt: r.updatedAt || 0, total: r.findings.length, photos };
   }
 
   /* ---------- factories ---------- */
@@ -657,7 +663,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function newAttendee(a) { return Object.assign({ id: uid(), name: '', role: '', org: '', email: '' }, a || {}); }
   function newReport(from) {
     const s = S.settings;
-    const r = { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), projNo: nextProjNo(), project: '', location: '', attendees: [], cc: [], ccAll: true, ccExtra: '', findings: [] };
+    const r = { id: uid(), projectId: (from && from.projectId) || uid(), createdAt: Date.now(), updatedAt: Date.now(), letterDate: todayISO(), date: todayISO(), projNo: nextProjNo(), project: '', location: '', attendees: [], cc: [], ccAll: true, ccExtra: '', findings: [] };
     if (from) {
       r.project = from.project || ''; r.projNo = from.projNo || r.projNo; r.location = from.location || ''; r.ccAll = from.ccAll !== false; r.ccExtra = '';
       r.attendees = from.attendees.map(a => newAttendee({ name: a.name, role: a.role, org: a.org, email: a.email || '' }));
@@ -669,7 +675,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function normalizeReport(r) {
     if (!r) return r;
-    r.letterDate = r.letterDate || r.date || todayISO(); r.projNo = r.projNo || '';
+    r.letterDate = r.letterDate || r.date || todayISO(); r.projNo = r.projNo || ''; r.projectId = r.projectId || '';
     r.ccAll = r.ccAll !== false; r.cc = (r.cc || []).map(a => newAttendee(a));
     r.attendees = r.attendees.map(a => Object.assign({ email: '' }, a));
     String(r.ccExtra || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach(x => r.cc.push(newAttendee({ name: x })));
@@ -709,6 +715,211 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     return out;
   }
 
+  const saveSettings = () => { S.settings.updatedAt = Date.now(); cloudSoon(); return DB.setMeta('settings', S.settings); };
+
+
+  /* ---------- Microsoft 365 sign-in and OneDrive sync (no server of our own) ---------- */
+  const CLOUD = { cfg: null, auth: null, state: 'off', last: 0, busy: false, queued: false, err: '', timer: 0 };
+  const cloudOn = () => !!(CLOUD.cfg && CLOUD.cfg.clientId && CLOUD.cfg.tenantId);
+  const MS_SCOPES = 'openid profile email offline_access User.Read Files.ReadWrite.AppFolder';
+  const GRAPH = 'https://graph.microsoft.com/v1.0/me/drive/special/approot';
+  const authBase = () => 'https://login.microsoftonline.com/' + CLOUD.cfg.tenantId + '/oauth2/v2.0';
+  const redirectUri = () => (CLOUD.cfg && CLOUD.cfg.redirectUri) || (location.origin + location.pathname.replace(/index\.html$/, ''));
+  const orgDomain = () => String((CLOUD.cfg && CLOUD.cfg.domain) || 'kav-banof.co.il').toLowerCase();
+  const b64url = buf => btoa(String.fromCharCode.apply(null, new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64dec = t => { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; return new TextDecoder().decode(Uint8Array.from(atob(t), c => c.charCodeAt(0))); };
+  const randStr = n => b64url(crypto.getRandomValues(new Uint8Array(n)));
+  const pkceGet = () => { try { return JSON.parse(sessionStorage.getItem('ms_pkce') || localStorage.getItem('ms_pkce') || 'null'); } catch (e) { return null; } };
+  const pkceSet = v => { const j = v ? JSON.stringify(v) : null; try { j ? sessionStorage.setItem('ms_pkce', j) : sessionStorage.removeItem('ms_pkce'); } catch (e) { /* ignore */ } try { j ? localStorage.setItem('ms_pkce', j) : localStorage.removeItem('ms_pkce'); } catch (e) { /* ignore */ } };
+
+  async function loadCloudCfg() {
+    if (S.dl || location.protocol === 'file:') return null;
+    try { const r = await fetch('config.json', { cache: 'no-store' }); if (!r.ok) return null; const j = await r.json(); return j && j.clientId && j.tenantId ? j : null; } catch (e) { return null; }
+  }
+  async function msLogin() {
+    const verifier = randStr(48), state = randStr(16);
+    const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    pkceSet({ verifier, state });
+    location.href = authBase() + '/authorize?' + new URLSearchParams({
+      client_id: CLOUD.cfg.clientId, response_type: 'code', redirect_uri: redirectUri(), response_mode: 'query',
+      scope: MS_SCOPES, state, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account'
+    }).toString();
+  }
+  async function tokenReq(params) {
+    const r = await fetch(authBase() + '/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.assign({ client_id: CLOUD.cfg.clientId, scope: MS_SCOPES }, params)).toString() });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error_description || j.error || 'token'); e.code = j.error; throw e; }
+    return j;
+  }
+  function claimsOf(idt) { try { return JSON.parse(b64dec(String(idt).split('.')[1])); } catch (e) { return {}; } }
+  async function acceptTokens(j) {
+    const c = claimsOf(j.id_token), email = String(c.preferred_username || c.email || c.upn || '').toLowerCase();
+    if (String(c.tid || '').toLowerCase() !== String(CLOUD.cfg.tenantId).toLowerCase() || !email.endsWith('@' + orgDomain())) {
+      throw Object.assign(new Error('החשבון ' + (email || '') + ' אינו חשבון משרד (@' + orgDomain() + ').'), { code: 'domain' });
+    }
+    CLOUD.auth = { access: j.access_token, refresh: j.refresh_token || (CLOUD.auth && CLOUD.auth.refresh) || '', exp: Date.now() + (j.expires_in || 3600) * 1000, email, name: c.name || '', expired: false };
+    await DB.setMeta('auth', CLOUD.auth);
+  }
+  async function msCallback() {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('code') && !q.has('error')) return;
+    const clean = () => { try { history.replaceState(null, '', redirectUri()); } catch (e) { /* ignore */ } };
+    const p = pkceGet(); pkceSet(null);
+    if (q.has('error')) { CLOUD.err = q.get('error_description') || q.get('error'); clean(); return; }
+    if (!p || p.state !== q.get('state')) { CLOUD.err = 'ההתחברות לא הושלמה, נסה שוב.'; clean(); return; }
+    try { await acceptTokens(await tokenReq({ grant_type: 'authorization_code', code: q.get('code'), redirect_uri: redirectUri(), code_verifier: p.verifier })); }
+    catch (e) { console.error(e); CLOUD.err = e.message || 'ההתחברות נכשלה.'; }
+    clean();
+  }
+  async function getToken() {
+    const a = CLOUD.auth; if (!a) return null;
+    if (Date.now() < a.exp - 60000) return a.access;
+    try { await acceptTokens(await tokenReq({ grant_type: 'refresh_token', refresh_token: a.refresh })); return CLOUD.auth.access; }
+    catch (e) { if (e.code === 'domain') throw e; a.expired = true; await DB.setMeta('auth', a); setCloud('login'); return null; }
+  }
+  async function gfetch(path, opts, tries) {
+    const tk = await getToken(); if (!tk) throw Object.assign(new Error('נדרשת התחברות מחדש'), { code: 'auth' });
+    const o = Object.assign({}, opts || {}); o.headers = Object.assign({ Authorization: 'Bearer ' + tk }, o.headers || {});
+    const r = await fetch(path.startsWith('http') ? path : GRAPH + ':/' + path, o);
+    if ((r.status === 429 || r.status >= 500) && (tries || 0) < 2) { await new Promise(x => setTimeout(x, 1500)); return gfetch(path, opts, (tries || 0) + 1); }
+    if (r.status === 401) { CLOUD.auth.exp = 0; if ((tries || 0) < 1) return gfetch(path, opts, 1); throw Object.assign(new Error('נדרשת התחברות מחדש'), { code: 'auth' }); }
+    return r;
+  }
+  async function gList(folder) {
+    const out = new Map();
+    let url = GRAPH + ':/' + folder + ':/children?$select=name,lastModifiedDateTime&$top=200';
+    while (url) {
+      const r = await gfetch(url); if (r.status === 404) return out;
+      if (!r.ok) throw new Error('רשימת הקבצים בענן נכשלה (' + r.status + ')');
+      const j = await r.json();
+      (j.value || []).forEach(it => { if (/\.json$/.test(it.name)) out.set(it.name.replace(/\.json$/, ''), it.lastModifiedDateTime); });
+      url = j['@odata.nextLink'];
+    }
+    return out;
+  }
+  async function gGetJson(path) { const r = await gfetch(path + ':/content'); if (r.status === 404) return null; if (!r.ok) throw new Error('קריאה מהענן נכשלה (' + r.status + ')'); return r.json(); }
+  async function gPut(path, body, type) {
+    const r = await gfetch(path + ':/content', { method: 'PUT', headers: { 'Content-Type': type || 'application/json' }, body });
+    if (!r.ok) throw new Error('שמירה בענן נכשלה (' + r.status + ')');
+    return r.json();
+  }
+  async function gDel(path) { const r = await gfetch(path, { method: 'DELETE' }); if (!r.ok && r.status !== 404) throw new Error('מחיקה בענן נכשלה'); }
+
+  async function pushReport(id, known) {
+    const rep = await DB.get(id); if (!rep) return;
+    let changed = false;
+    for (const f of rep.findings) for (const d of (f.docs || [])) {
+      if (d.blob && !d.up) { await gPut('docs/' + d.id, d.blob, d.type || 'application/octet-stream'); d.up = true; changed = true; }
+    }
+    const json = JSON.stringify(rep, (k, v) => (k === 'blob' ? undefined : v));
+    const meta = await gPut('reports/' + id + '.json', json);
+    if (changed) await DB.put(rep);
+    known[id] = { m: meta.lastModifiedDateTime, u: rep.updatedAt || 0 };
+  }
+  async function fetchReport(id) {
+    const rep = await gGetJson('reports/' + id + '.json'); if (!rep) return null;
+    normalizeReport(rep);
+    for (const f of rep.findings) for (const d of (f.docs || [])) {
+      if (!d.blob) { const r = await gfetch('docs/' + d.id + ':/content'); if (r.ok) { d.blob = await r.blob(); d.up = true; } }
+    }
+    return rep;
+  }
+  async function syncSettings(known) {
+    const r = await gfetch('settings.json'); let rm = null;
+    if (r.ok) rm = (await r.json()).lastModifiedDateTime; else if (r.status !== 404) throw new Error('סנכרון הפרופיל נכשל');
+    const lu = S.settings.updatedAt || 0, k = known._settings;
+    const push = async () => { const meta = await gPut('settings.json', JSON.stringify(S.settings)); known._settings = { m: meta.lastModifiedDateTime, u: S.settings.updatedAt || 0 }; };
+    if (!rm) { if (S.settings.supervisorName) { if (!S.settings.updatedAt) S.settings.updatedAt = Date.now(); await DB.setMeta('settings', S.settings); await push(); } return; }
+    const remoteChanged = !k || k.m !== rm, localChanged = !k || k.u !== lu;
+    if (remoteChanged) {
+      const rs = await gGetJson('settings.json');
+      if (rs && ((rs.updatedAt || 0) > lu || !S.settings.supervisorName)) {
+        S.settings = Object.assign({ officeName: 'קו בנוף', supervisorName: '', supervisorRole: 'אדריכל נוף', signTitle: '' }, rs);
+        await DB.setMeta('settings', S.settings); known._settings = { m: rm, u: S.settings.updatedAt || 0 }; return;
+      }
+      if (rs && (rs.updatedAt || 0) === lu) { known._settings = { m: rm, u: lu }; return; }
+      await push(); return;
+    }
+    if (localChanged) await push();
+  }
+  async function syncReports(known) {
+    const remote = await gList('reports'), locals = await DB.summaries(), lmap = new Map(locals.map(x => [x.id, x]));
+    let changed = false;
+    const ids = new Set([...remote.keys(), ...lmap.keys()]);
+    for (const id of ids) {
+      const rm = remote.get(id), l = lmap.get(id), k = known[id];
+      if (rm && !l) {
+        if (k) { await gDel('reports/' + id + '.json'); delete known[id]; }
+        else { const rep = await fetchReport(id); if (rep) { await DB.put(rep); known[id] = { m: rm, u: rep.updatedAt || 0 }; changed = true; } }
+      } else if (!rm && l) {
+        if (k) { if (S.report && S.report.id === id) continue; await DB.del(id); delete known[id]; changed = true; }
+        else await pushReport(id, known);
+      } else if (rm && l) {
+        const remoteChanged = !k || k.m !== rm, localChanged = !k || k.u !== l.updatedAt;
+        if (!remoteChanged && !localChanged) continue;
+        if (remoteChanged) {
+          const rep = await fetchReport(id);
+          if (rep && (rep.updatedAt || 0) > l.updatedAt) {
+            if (S.report && S.report.id === id) continue;
+            await DB.put(rep); known[id] = { m: rm, u: rep.updatedAt || 0 }; changed = true; continue;
+          }
+          if (rep && (rep.updatedAt || 0) === l.updatedAt) { known[id] = { m: rm, u: l.updatedAt }; continue; }
+        }
+        await pushReport(id, known);
+      }
+    }
+    if (changed) { S.summaries = await DB.summaries(); if (S.screen === 'list' || S.screen === 'project') render(); }
+  }
+  async function cloudSync() {
+    if (!cloudOn() || !CLOUD.auth || CLOUD.auth.expired) return;
+    if (CLOUD.busy) { CLOUD.queued = true; return; }
+    CLOUD.busy = true; setCloud('syncing');
+    try {
+      if (S.report) await flush();
+      const known = (await DB.getMeta('sync')) || {};
+      await syncSettings(known);
+      await syncReports(known);
+      await DB.setMeta('sync', known);
+      CLOUD.last = Date.now(); CLOUD.err = ''; setCloud('ok');
+    } catch (e) {
+      console.error(e);
+      if (e.code === 'auth') setCloud('login'); else { CLOUD.err = e.message || 'שגיאת סנכרון'; setCloud('err'); }
+    } finally {
+      CLOUD.busy = false;
+      if (CLOUD.queued) { CLOUD.queued = false; setTimeout(cloudSync, 400); }
+    }
+  }
+  function cloudSoon() { if (!cloudOn() || !CLOUD.auth) return; clearTimeout(CLOUD.timer); CLOUD.timer = setTimeout(cloudSync, 6000); }
+  function setCloud(st) {
+    CLOUD.state = st;
+    const c = $('#cloud-chip'); if (c) { c.textContent = cloudLabel(); c.dataset.s = st; }
+    const t = $('#cloud-line'); if (t) t.textContent = cloudLabel(true);
+  }
+  function cloudLabel(long) {
+    const st = CLOUD.state;
+    if (st === 'syncing') return 'מסנכרן…';
+    if (st === 'login') return long ? 'נדרשת התחברות מחדש' : 'התחבר מחדש';
+    if (st === 'err') return long ? 'שגיאת סנכרון: ' + CLOUD.err : 'שגיאת סנכרון';
+    if (st === 'ok') return long ? 'מסונכרן ' + new Date(CLOUD.last).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : 'מסונכרן';
+    return long ? 'עוד לא סונכרן' : 'סנכרון';
+  }
+  const cloudChip = () => cloudOn() && CLOUD.auth ? '<button class="chip" id="cloud-chip" data-act="cloud-sync" data-s="' + CLOUD.state + '">' + esc(cloudLabel()) + '</button>' : '';
+  function viewLogin() {
+    return '<div class="stack" style="padding-top:10vh"><div class="card"><h2>כניסה לחשבון המשרד</h2>' +
+      '<p style="margin:0 0 14px">התחבר עם כתובת המייל של המשרד (name@' + esc(orgDomain()) + '). אחרי ההתחברות יופיעו הדו״חות והפרופיל שלך בכל מכשיר.</p>' +
+      (CLOUD.err ? '<div class="banner">' + esc(CLOUD.err) + '</div>' : '') +
+      '<button class="btn primary big" data-act="ms-login">התחבר עם Microsoft</button></div></div>';
+  }
+  function accountCard() {
+    if (!cloudOn()) return '';
+    const a = CLOUD.auth;
+    return '<div class="card"><h2>חשבון המשרד</h2>' +
+      (a ? '<p style="margin:0 0 4px;direction:ltr;text-align:right;font-weight:700">' + esc(a.email) + '</p><p id="cloud-line" style="margin:0 0 12px;font-size:13px;color:var(--muted)">' + esc(cloudLabel(true)) + '</p>' +
+        '<div class="row"><button class="btn small primary" data-act="cloud-sync">סנכרן עכשיו</button><button class="btn small" data-act="ms-logout">התנתק</button>' +
+        '<button class="btn small danger" data-act="ms-wipe" data-arm="בטוח? יימחקו הנתונים מהמכשיר הזה (הם נשארים בענן). לחץ שוב">התנתק ומחק מהמכשיר</button></div>' :
+        '<button class="btn primary" data-act="ms-login">התחבר עם Microsoft</button>') + '</div>';
+  }
+
   /* ---------- saving ---------- */
   let saveT = null, dirty = false;
   function setSaved(t) { const el = $('#saved'); if (el) el.textContent = t; }
@@ -724,7 +935,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const ok = await DB.put(S.report);
     const sm = summarize(S.report), i = S.summaries.findIndex(x => x.id === sm.id);
     if (i >= 0) S.summaries[i] = sm; else S.summaries.push(sm);
-    setSaved(ok ? 'נשמר' : 'השמירה נכשלה');
+    setSaved(ok ? 'נשמר' : 'השמירה נכשלה'); if (ok) cloudSoon();
     if (!ok) toast('השמירה בטלפון נכשלה. הורד את הדו״ח כדי לא לאבד אותו.');
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
@@ -791,6 +1002,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if (S.screen === 'list') html = viewList();
     else if (S.screen === 'settings') html = viewSettings();
     else if (S.screen === 'finding') html = viewFinding();
+    else if (S.screen === 'project') html = viewProject();
+    else if (S.screen === 'login') html = viewLogin();
     else html = viewReport();
     APP.innerHTML = html;
     $$('textarea', APP).forEach(autosize);
@@ -801,16 +1014,53 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   /* ---------- views ---------- */
   function viewList() {
     const s = S.settings, need = !s.supervisorName;
-    const items = S.summaries.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    const groups = projGroups();
     return '<header class="top"><h1>פיקוח עליון<span class="sub">דו״חות מהשטח</span></h1>' +
-      '<button class="icon-btn bordered" data-act="settings" aria-label="הגדרות">' + icon('gear') + '</button></header>' +
+      cloudChip() + '<button class="icon-btn bordered" data-act="settings" aria-label="הגדרות">' + icon('gear') + '</button></header>' +
       '<div class="stack">' +
+      (CLOUD.state === 'login' && CLOUD.auth ? '<div class="banner">נדרשת התחברות מחדש לחשבון המשרד. <button class="btn small" data-act="ms-login">התחבר</button></div>' : '') +
       (need ? '<div class="card"><h2>הגדרה ראשונה</h2><p style="margin:0 0 12px">הוסף את שמך, התפקיד והחתימה פעם אחת. הם יופיעו אוטומטית בכל דו״ח, על נייר המכתבים של המשרד.</p><button class="btn soft" data-act="settings">פתח הגדרות</button></div>' : '') +
-      '<button class="btn primary big" data-act="new">' + icon('plus', 22) + ' דו״ח חדש</button>' +
+      '<button class="btn primary big" data-act="new">' + icon('plus', 22) + ' פרויקט חדש</button>' +
       (S.dbOK ? '' : '<div class="banner">הדפדפן לא מאפשר שמירה בטלפון. הדו״חות יישמרו רק כל עוד הדף פתוח, אז הורד קובץ לפני שאתה סוגר.</div>') +
-      (items.length ? '<h2 class="sec">דו״חות אחרונים</h2>' + items.map(repCard).join('') :
-        '<div class="empty"><b>עוד אין דו״חות</b>פתח דו״ח חדש כשאתה מגיע לאתר. הכול נשמר בטלפון תוך כדי עבודה.</div>') +
+      (groups.length ? '<h2 class="sec">פרויקטים</h2>' + groups.map(projCard).join('') :
+        '<div class="empty"><b>עוד אין פרויקטים</b>פתח פרויקט חדש כשאתה מגיע לאתר. את סבבי הפיקוח הבאים תפתח מתוך הפרויקט, וכל הפרטים יועתקו אוטומטית.</div>') +
       '</div>';
+  }
+  function projGroups() {
+    const g = new Map();
+    S.summaries.forEach(x => { const k = x.projectId || ('L:' + x.id); if (!g.has(k)) g.set(k, []); g.get(k).push(x); });
+    const out = [];
+    g.forEach((arr, k) => {
+      arr.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.updatedAt - a.updatedAt));
+      out.push({ id: k, rounds: arr, latest: arr[0], touched: arr.reduce((m, x) => Math.max(m, x.updatedAt || 0), 0) });
+    });
+    return out.sort((a, b) => b.touched - a.touched);
+  }
+  function projCard(g) {
+    const l = g.latest;
+    return '<div class="rep"><button class="main" data-act="open-proj" data-id="' + esc(g.id) + '">' +
+      '<div class="t">' + esc(l.project || 'ללא נושא') + '</div>' +
+      '<div class="m">' + (l.projNo ? esc(l.projNo) + ' · ' : '') + esc(l.location || '') + '</div>' +
+      '<div class="stats"><span class="pill open">' + g.rounds.length + (g.rounds.length === 1 ? ' סבב פיקוח' : ' סבבי פיקוח') + '</span>' +
+      '<span class="pill open">אחרון: ' + esc(fmtDate(l.date)) + '</span></div></button></div>';
+  }
+  function viewProject() {
+    const g = projGroups().find(x => x.id === S.pid);
+    if (!g) return '<header class="top"><button class="icon-btn" data-act="back-home" aria-label="חזרה לפרויקטים">' + icon('back') + '</button><h1>פרויקט</h1></header><div class="stack"><div class="empty"><b>הפרויקט לא נמצא</b></div></div>';
+    const l = g.latest;
+    return '<header class="top"><button class="icon-btn" data-act="back-home" aria-label="חזרה לפרויקטים">' + icon('back') + '</button>' +
+      '<h1>' + esc(l.project || 'ללא נושא') + '<span class="sub">' + (l.projNo ? esc(l.projNo) + ' · ' : '') + esc(l.location || '') + '</span></h1></header>' +
+      '<div class="stack"><button class="btn primary big" data-act="new-round">' + icon('plus', 22) + ' סבב פיקוח חדש</button>' +
+      '<p style="margin:0;font-size:13px;color:var(--muted)">הנושא, המיקום, מספר הפרויקט, המשתתפים והמכותבים יועתקו אוטומטית מהסבב האחרון.</p>' +
+      '<h2 class="sec">סבבי פיקוח</h2>' + g.rounds.map((it, i) => roundCard(it, g.rounds.length - i)).join('') +
+      '<button class="btn danger" data-act="del-proj" data-arm="בטוח? יימחקו כל הסבבים. לחץ שוב">' + icon('trash') + ' מחק את הפרויקט</button></div>';
+  }
+  function roundCard(it, n) {
+    return '<div class="rep"><button class="main" data-act="open" data-id="' + it.id + '">' +
+      '<div class="t">סבב ' + n + ' · ' + esc(fmtDate(it.date)) + '</div>' +
+      '<div class="stats"><span class="pill open">' + (it.total ? it.total + ' הערות' : 'אין הערות עדיין') + '</span>' +
+      (it.photos ? '<span class="pill open">' + it.photos + ' תמונות</span>' : '') + '</div></button>' +
+      '<div class="acts"><button class="danger" data-act="del" data-id="' + it.id + '" data-arm="בטוח? לחץ שוב">מחק</button></div></div>';
   }
   function repCard(it) {
     return '<div class="rep"><button class="main" data-act="open" data-id="' + it.id + '">' +
@@ -850,6 +1100,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       fld('תפקיד (ברשימת המשתתפים)', 's:supervisorRole', s.supervisorRole) +
       fld('שם המשרד (ברשימת המשתתפים)', 's:officeName', s.officeName) +
       fld('כותרת מתחת לשם (לא חובה)', 's:signTitle', s.signTitle, 'placeholder="למשל: אדר\' נוף"') + '</div>' +
+      (first ? '' : accountCard()) +
       sigCard() +
       (first ? '<button class="btn primary big" data-act="first-done">שמור והתחל</button>' :
         imgCard('header', 'כותרת עליונה בנייר המכתבים', 'התמונה שבראש כל עמוד.') +
@@ -1609,7 +1860,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       URL.revokeObjectURL(url);
       const v = { src: sig ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.86), w, h };
       if (sig) S.settings.signature = v; else S.settings[kind + 'Img'] = v;
-      await DB.setMeta('settings', S.settings);
+      await saveSettings();
       busy(null); render();
     } catch (e) { busy(null); toast('לא הצלחתי לקרוא את התמונה'); }
   }
@@ -1658,7 +1909,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const o = document.createElement('canvas'); o.width = Math.max(1, Math.round(w * k)); o.height = Math.max(1, Math.round(h * k));
     o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, o.width, o.height);
     S.settings.signature = { src: o.toDataURL('image/png'), w: o.width, h: o.height };
-    await DB.setMeta('settings', S.settings);
+    await saveSettings();
     sgClose(); render(); toast('החתימה נשמרה');
   }
 
@@ -1672,7 +1923,7 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function bindValue(t) {
     const b = t.dataset.bind; if (!b) return;
     const parts = b.split(':'), v = t.type === 'checkbox' ? t.checked : t.value;
-    if (parts[0] === 's') { S.settings[parts[1]] = v; DB.setMeta('settings', S.settings); return; }
+    if (parts[0] === 's') { S.settings[parts[1]] = v; saveSettings(); return; }
     if (!S.report) return;
     if (parts[0] === 'r') S.report[parts[1]] = v;
     else if (parts[0] === 'a') { const a = S.report.attendees.find(x => x.id === parts[1]); if (a) a[parts[2]] = v; }
@@ -1707,13 +1958,25 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     'first-done': async () => {
       if (!String(S.settings.supervisorName || '').trim()) { toast('נא להזין שם מלא'); return; }
       S.settings.supervisorName = S.settings.supervisorName.trim(); S.first = false;
-      await DB.setMeta('settings', S.settings); go('list');
+      await saveSettings(); go('list');
     },
-    'back-list': async () => { await flush(); S.report = null; S.summaries = await DB.summaries(); go('list'); },
-    'new': async () => { S.report = newReport(); S.tab = 'details'; dirty = true; await flush(); go('report', 'details'); },
-    'open': async (b) => { busy('פותח דו״ח…'); const r = await DB.get(b.dataset.id); busy(null); if (!r) { toast('לא הצלחתי לפתוח את הדו״ח'); return; } S.report = normalizeReport(r); go('report', 'details'); setSaved('נשמר'); },
+    'back-list': async () => { const inRep = S.screen === 'report'; await flush(); S.report = null; S.summaries = await DB.summaries(); go(inRep && S.pid && projGroups().some(g => g.id === S.pid) ? 'project' : 'list'); },
+    'ms-login': () => msLogin(),
+    'cloud-sync': () => { if (CLOUD.state === 'login') msLogin(); else cloudSync(); },
+    'ms-logout': async () => { CLOUD.auth = null; await DB.setMeta('auth', null); CLOUD.state = 'off'; S.screen = 'login'; render(); },
+    'ms-wipe': (b) => armed(b, async () => { await DB.clearAll(); CLOUD.auth = null; S.summaries = []; S.report = null; S.settings = { officeName: 'קו בנוף', supervisorName: '', supervisorRole: 'אדריכל נוף', signTitle: '' }; S.screen = 'login'; render(); }),
+    'back-home': () => { S.pid = null; go('list'); },
+    'open-proj': (b) => { S.pid = b.dataset.id; go('project'); },
+    'new-round': async () => {
+      const g = projGroups().find(x => x.id === S.pid); if (!g) return;
+      busy('מעתיק פרטים…'); const from = await DB.get(g.latest.id); busy(null); if (!from) { toast('לא הצלחתי לקרוא את הסבב הקודם'); return; }
+      S.report = newReport(normalizeReport(from)); S.tab = 'details'; dirty = true; await flush(); go('report', 'details'); toast('נפתח סבב חדש עם הפרטים מהסבב הקודם');
+    },
+    'del-proj': (b) => armed(b, async () => { const g = projGroups().find(x => x.id === S.pid); if (!g) return; for (const x of g.rounds) await DB.del(x.id); S.summaries = S.summaries.filter(x => !g.rounds.some(y => y.id === x.id)); S.pid = null; go('list'); toast('הפרויקט נמחק'); }),
+    'new': async () => { S.report = newReport(); S.pid = S.report.projectId; S.tab = 'details'; dirty = true; await flush(); go('report', 'details'); },
+    'open': async (b) => { busy('פותח דו״ח…'); const r = await DB.get(b.dataset.id); busy(null); if (!r) { toast('לא הצלחתי לפתוח את הדו״ח'); return; } S.report = normalizeReport(r); S.pid = S.report.projectId || S.pid; go('report', 'details'); setSaved('נשמר'); },
     'dup': async (b) => { const from = await DB.get(b.dataset.id); if (!from) return; S.report = newReport(normalizeReport(from)); dirty = true; await flush(); go('report', 'details'); toast('נוצר דו״ח המשך עם אותו נושא, מיקום ומשתתפים'); },
-    'del': (b) => armed(b, async () => { await DB.del(b.dataset.id); S.summaries = S.summaries.filter(x => x.id !== b.dataset.id); render(); toast('הדו״ח נמחק'); }),
+    'del': (b) => armed(b, async () => { await DB.del(b.dataset.id); S.summaries = S.summaries.filter(x => x.id !== b.dataset.id); if (S.screen === 'project' && !projGroups().some(g => g.id === S.pid)) { S.pid = null; go('list'); } else render(); toast('הסבב נמחק'); }),
     'tab': (b) => { S.tab = b.dataset.tab; S.pvTok++; render(); window.scrollTo(0, 0); },
     'att-add': () => { const a = newAttendee(); S.report.attendees.push(a); touch(); $('#atts').insertAdjacentHTML('beforeend', attRow(a)); const i = $('#atts .att:last-child input'); if (i) i.focus(); },
     'cc-add': () => { const a = newAttendee(); S.report.cc.push(a); touch(); $('#ccs').insertAdjacentHTML('beforeend', ccRow(a)); const i = $('#ccs .att:last-child input'); if (i) i.focus(); },
@@ -1736,8 +1999,8 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     'ph-del': (b) => { const f = curFinding(); f.photos = f.photos.filter(p => p.id !== b.dataset.pid); touch(); updatePhotos(); },
     'sk-open': (b) => skOpen(b.dataset.pid),
     'img-pick': (b) => { pendingKind = b.dataset.kind; $('#in-img').click(); },
-    'img-del': async (b) => { const k = b.dataset.kind; if (k === 'signature') delete S.settings.signature; else S.settings[k + 'Img'] = false; await DB.setMeta('settings', S.settings); render(); },
-    'img-reset': async (b) => { delete S.settings[b.dataset.kind + 'Img']; await DB.setMeta('settings', S.settings); render(); },
+    'img-del': async (b) => { const k = b.dataset.kind; if (k === 'signature') delete S.settings.signature; else S.settings[k + 'Img'] = false; await saveSettings(); render(); },
+    'img-reset': async (b) => { delete S.settings[b.dataset.kind + 'Img']; await saveSettings(); render(); },
     'dl-docx': exportDocx,
     'dl-pdf': exportPdf,
     'send-mail': sendMail,
@@ -1768,7 +2031,31 @@ const DEFAULT_FOOTER = { src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     const st = await DB.getMeta('settings');
     S.settings = Object.assign({ officeName: 'קו בנוף', supervisorName: '', supervisorRole: 'אדריכל נוף', signTitle: '' }, st || {});
     S.summaries = await DB.summaries();
-    if (!S.settings.supervisorName) { S.first = true; S.screen = 'settings'; }
+    try {
+      const legacy = S.summaries.filter(x => !x.projectId);
+      if (legacy.length) {
+        const m = new Map();
+        for (const x of legacy) { const k = (x.projNo || '') + '|' + (x.project || x.id); if (!m.has(k)) m.set(k, uid()); const rr = await DB.get(x.id); if (rr) { rr.projectId = m.get(k); await DB.put(rr); } }
+        S.summaries = await DB.summaries();
+      }
+    } catch (e) { console.error(e); }
+    CLOUD.cfg = await loadCloudCfg();
+    if (cloudOn()) {
+      CLOUD.auth = (await DB.getMeta('auth')) || null;
+      await msCallback();
+      if (!CLOUD.auth) { S.screen = 'login'; render(); return; }
+      if (CLOUD.auth.expired) CLOUD.state = 'login';
+      else {
+        if (!S.settings.supervisorName) { busy('מסנכרן את הפרופיל…'); await cloudSync(); busy(null); }
+        else cloudSync();
+        if (!S.settings.supervisorName) { S.settings.supervisorName = CLOUD.auth.name || ''; }
+        S.settings.email = CLOUD.auth.email;
+        clearInterval(CLOUD.iv); CLOUD.iv = setInterval(() => { if (document.visibilityState === 'visible') cloudSync(); }, 90000);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') cloudSync(); });
+        window.addEventListener('online', () => cloudSync());
+      }
+    }
+    if (!S.settings.supervisorName || (cloudOn() && CLOUD.auth && !S.settings.updatedAt)) { S.first = true; S.screen = 'settings'; }
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignore */ }
     render();
     try {
